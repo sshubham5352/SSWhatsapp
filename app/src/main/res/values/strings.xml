@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">SS WhatsApp</string>
+    <string name="makes_screen_scrollable">makes screen scrollable</string>
+    <string name="email_id">Email Id</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="already_have_an_account">Already have an account?</string>
+    <string name="login">Login</string>
+    <string name="log_in">Log In</string>
+    <string name="new_user">New User?</string>
+    <string name="sign_up">Sign up</string>
+    <string name="create_new_account">Create new account</string>
+    <string name="name">Name</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="n_a">N/A</string>
+    <string name="password_constraints">Password Rules: \n\nMinimum 8 length \nAt least one upper case \nAt least one number \nAt least one special character</string>
+    <string name="mobile_no">Mobile No</string>
+    <string name="or">or</string>
+    <string name="gender">Gender</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="others">Others</string>
+    <string name="all_chats">All Chats</string>
+    <string name="no_chats">No Chats</string>
+    <string name="select_contact">Select Contact</string>
+    <string name="_0_contacts">0 contacts</string>
+    <string name="please_allow_contacts_permission">Please allow contacts permission\nto start chatting</string>
+    <string name="contacts_on_ss_whatsapp">Contacts on SS Whatsapp</string>
+    <string name="tagline">Tagline</string>
+    <string name="na">N/A</string>
+    <string name="contacts_yet_to_come_on_ss_whatsapp">Contacts yet to come on SS Whatsapp</string>
+    <string name="invite">Invite</string>
+    <string name="no_of_contacts">%1$d contacts</string>
+    <string name="online">online</string>
+    <string name="type_here">Type here..</string>
+    <string name="layout_background">layout background</string>
+    <string name="mic_icon">mic_icon</string>
+    <string name="send_icon">send_icon</string>
+    <string name="img_camera_icon">img_camera_icon</string>
+    <string name="_10_30am">10:30am</string>
+    <string name="you_hi_how_are_you">You: Hi How are you?</string>
+
+    <!--  Arrays  -->
+    <string-array name="genders">
+        <item>male</item>
+        <item>female</item>
+        <item>others</item>
+    </string-array>
+
+
+    <!--  Misc (Numbers)  -->
+    <integer name="max_password_length">12</integer>
+</resources>

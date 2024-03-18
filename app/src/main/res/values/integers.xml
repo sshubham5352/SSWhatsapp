@@ -1,0 +1,9 @@
+<resources>
+
+    <!--  duration (millis)  -->
+    <integer name="duration_anim_chat_icons">200</integer>
+
+    <!--  Misc (Numbers)  -->
+    <item name="percent_chat_guideline_left" format="float" type="integer">0.18</item>
+    <item name="percent_chat_guideline_right" format="float" type="integer">0.82</item>
+</resources>

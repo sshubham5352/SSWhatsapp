@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:colorPrimary">@color/colorPrimary</item>
+        <item name="android:statusBarColor">@color/colorCakskillWhite</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="floatingActionButtonStyle">@style/StyleFAB</item>
+    </style>
+
+    <style name="ThemeSplashActivity" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/bg_signup_activity</item>
+    </style>
+
+    <style name="ThemeSignUpActivity" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/bg_signup_activity</item>
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
+    <style name="ThemeChatActivity" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/bg_chat_activity</item>
+    </style>
+
+    <style name="StyleFAB" parent="Widget.Design.FloatingActionButton">
+        <item name="shapeAppearanceOverlay">@style/StyleStandardAssetShape</item>
+    </style>
+
+    <style name="StyleChatConstraintLayout">
+        <item name="android:minWidth">100dp</item>
+        <item name="android:paddingStart">@dimen/padding_chat_item_start</item>
+        <item name="android:paddingEnd">@dimen/padding_chat_item_end</item>
+        <item name="android:paddingTop">@dimen/padding_chat_item_top</item>
+        <item name="android:paddingBottom">@dimen/padding_chat_item_bottom</item>
+        <item name="layout_constraintWidth_default">wrap</item>
+    </style>
+
+
+    <style name="StyleStandardAssetShape" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerSize">30%</item>
+    </style>
+
+    <style name="StyleTextInputEditText" parent="ThemeOverlay.Material3.TextInputEditText">
+        <item name="android:background">@drawable/bg_input_edit_text_view</item>
+        <item name="android:fontFamily">@font/source_sans_pro_semi_bold</item>
+        <item name="android:drawablePadding">@dimen/padding_drawable_start</item>
+        <item name="android:paddingHorizontal">@dimen/padding_horizontal_editText</item>
+        <item name="android:paddingTop">@dimen/padding_top_textInput</item>
+        <item name="android:paddingBottom">@dimen/padding_bottom_textInput</item>
+        <item name="android:textColor">@color/colorPrimaryText</item>
+        <item name="android:textColorHint">@color/colorHintText</item>
+        <item name="android:textSize">@dimen/size_standard_edittext</item>
+    </style>
+
+    <style name="StyleStandardRadioBtn" parent="Widget.AppCompat.CompoundButton.RadioButton">
+        <item name="android:fontFamily">@font/source_sans_pro_semi_bold</item>
+        <item name="android:textColor">@color/colorPrimaryText</item>
+        <item name="android:textSize">@dimen/size_standard_radio_btn</item>
+    </style>
+
+</resources>

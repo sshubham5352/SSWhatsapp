@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--    Margin (dp)  -->
+    <dimen name="margin_horizontal_radio_btn">8dp</dimen>
+    <dimen name="margin_fab">24dp</dimen>
+    <dimen name="margin_horizontal_user_img">12dp</dimen>
+    <dimen name="margin_chat_status_icon_top">3dp</dimen>
+    <dimen name="margin_vertical_date_header">18dp</dimen>
+
+    <!--    Padding (dp)  -->
+    <dimen name="padding_layout_large">24dp</dimen>
+    <dimen name="padding_layout">16dp</dimen>
+
+    <dimen name="padding_vertical_layout_x_large">32dp</dimen>
+    <dimen name="padding_vertical_layout_large">24dp</dimen>
+    <dimen name="padding_vertical_layout">16dp</dimen>
+
+    <dimen name="padding_horizontal_layout_x_large">32dp</dimen>
+    <dimen name="padding_horizontal_layout_large">24dp</dimen>
+    <dimen name="padding_horizontal_layout">16dp</dimen>
+
+    <dimen name="padding_floating_hint">10dp</dimen>
+
+    <dimen name="padding_top_textInput">24dp</dimen>
+    <dimen name="padding_bottom_textInput">16dp</dimen>
+
+    <dimen name="padding_horizontal_editText">12dp</dimen>
+
+    <dimen name="padding_drawable_start">8dp</dimen>
+
+    <dimen name="padding_horizontal_toolbar">16dp</dimen>
+    <dimen name="padding_horizontal_toolbar_icon">8dp</dimen>
+
+    <!--CHAT ITEM PADDING-->
+    <dimen name="padding_chat_item_start">8dp</dimen>
+    <dimen name="padding_chat_item_end">12dp</dimen>
+    <dimen name="padding_chat_item_top">6dp</dimen>
+    <dimen name="padding_chat_item_bottom">3dp</dimen>
+
+    <!--    Spacing (dp)  -->
+    <dimen name="space_between_edit_texts_large">18dp</dimen>
+    <dimen name="space_between_edit_texts">12dp</dimen>
+    <dimen name="space_between_edit_texts_small">8dp</dimen>
+    <dimen name="space_between_chats_small">1dp</dimen>
+
+    <dimen name="space_between_rv_user_items">26dp</dimen>
+
+    <!--    Curves (dp)  -->
+    <dimen name="corner_radius_standard_Edittext">28dp</dimen>
+    <dimen name="corner_radius_edittext_small">12dp</dimen>
+    <dimen name="corner_radius_chat_item">12dp</dimen>
+
+
+    <!--    text Size (sp)    -->
+    <dimen name="size_standard_field">14sp</dimen>
+    <dimen name="size_standard_messages">14sp</dimen>
+    <dimen name="size_standard_edittext">14sp</dimen>
+    <dimen name="size_standard_radio_btn">12sp</dimen>
+
+    <dimen name="size_layout_title_large">32sp</dimen>
+    <dimen name="size_layout_title">22sp</dimen>
+    <dimen name="size_layout_title_small">20sp</dimen>
+
+    <dimen name="size_layout_sub_title_large">24sp</dimen>
+    <dimen name="size_layout_sub_title">16sp</dimen>
+    <dimen name="size_layout_sub_title_small">12sp</dimen>
+
+    <dimen name="size_user_name_large">18sp</dimen>
+    <dimen name="size_user_name">16sp</dimen>
+    <dimen name="size_user_name_small">14sp</dimen>
+
+    <dimen name="size_tagline">14sp</dimen>
+    <dimen name="size_tagline_small">12sp</dimen>
+    <dimen name="size_tagline_smallest">9sp</dimen>
+
+    <dimen name="size_btn_standard">14sp</dimen>
+    <dimen name="size_btn_medium">12sp</dimen>
+    <dimen name="size_btn_small">12sp</dimen>
+
+    <dimen name="size_toolbar_title_large">22sp</dimen>
+    <dimen name="size_toolbar_title">16sp</dimen>
+    <dimen name="size_toolbar_sub_title">12sp</dimen>
+
+    <dimen name="size_chat_edittext">18sp</dimen>
+    <dimen name="size_msg_chat">16sp</dimen>
+    <dimen name="size_time_stamp">11sp</dimen>
+    <dimen name="size_time_stamp_large">14sp</dimen>
+
+    <!--    View Size (sp)    -->
+    <dimen name="size_max_chat_edittext">180dp</dimen>
+    <dimen name="size_chat_item_tail">6dp</dimen>
+
+    <!--    Icon Size (sp)    -->
+    <dimen name="size_standard_app_icon">36dp</dimen>
+    <dimen name="size_toolbar_icon">36dp</dimen>
+
+    <dimen name="size_chat_icon">48dp</dimen>
+    <dimen name="size_chat_icon_small">22dp</dimen>
+    <dimen name="size_chat_tick_icon">14dp</dimen>
+    <dimen name="size_chat_tick_icon_large">18dp</dimen>
+    <dimen name="size_chat_like_icon">10dp</dimen>
+
+
+    <!--    Image Size (dp)    -->
+    <dimen name="size_profile_image_large">100dp</dimen>
+    <dimen name="size_profile_image">52dp</dimen>
+    <dimen name="size_profile_image_small">40dp</dimen>
+
+
+    <!--    Lottie Anim Size (dp)    -->
+    <dimen name="size_standard_lottie_anim">150sp</dimen>
+    <dimen name="size_app_logo_lottie_anim">140sp</dimen>
+
+
+    <!--    Elevation (dp)    -->
+    <dimen name="elevation_high">12dp</dimen>
+    <dimen name="standard_elevation">8dp</dimen>
+    <dimen name="elevation_low">4dp</dimen>
+    <dimen name="elevation_lowest">2dp</dimen>
+
+    <!--    Misc    -->
+    <dimen name="height_toolbar_bottom_line">2dp</dimen>
+</resources>

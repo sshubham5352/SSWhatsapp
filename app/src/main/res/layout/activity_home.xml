@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/root_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context="com.example.sswhatsapp.activities.HomeActivity">
+
+        <Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:elevation="@dimen/standard_elevation"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/title_toolbar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="@font/source_sans_pro_regular"
+                    android:text="@string/all_chats"
+                    android:textColor="@color/colorBlack"
+                    android:textSize="@dimen/size_toolbar_title_large" />
+
+                <ImageView
+                    android:layout_width="@dimen/size_toolbar_icon"
+                    android:layout_height="@dimen/size_toolbar_icon"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="8dp"
+                    android:layout_toStartOf="@id/toolbar_menu_btn"
+                    android:paddingHorizontal="@dimen/padding_horizontal_toolbar_icon"
+                    android:src="@drawable/img_search_icon" />
+
+                <ImageView
+                    android:id="@+id/toolbar_menu_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true"
+                    android:paddingStart="@dimen/padding_horizontal_toolbar_icon"
+                    android:paddingEnd="@dimen/padding_horizontal_toolbar"
+                    android:src="@drawable/res_three_dots_icon" />
+
+            </RelativeLayout>
+        </Toolbar>
+
+        <View
+            android:id="@+id/toolbar_bottom_line"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/height_toolbar_bottom_line"
+            android:background="@color/colorCakskillWhite"
+            app:layout_constraintTop_toBottomOf="@id/toolbar" />
+
+
+
+        <include
+            android:id="@+id/layout_no_chats"
+            layout="@layout/layout_no_chats_available"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_all_chats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/margin_fab"
+            android:src="@drawable/img_chat_icon"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

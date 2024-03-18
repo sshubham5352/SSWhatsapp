@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:right="@dimen/size_chat_item_tail">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="45"
+                android:centerColor="@color/colorBlue"
+                android:endColor="@color/colorDarkBlue"
+                android:startColor="@color/colorLightBlue" />
+            <corners android:radius="@dimen/corner_radius_chat_item" />
+        </shape>
+    </item>
+
+</layer-list>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorBlack">#000000</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorPrimary">#128c7e</color>
+    <color name="colorPrimaryDark">#075e54</color>
+    <color name="colorEmptyView">#fafafa</color>
+
+
+    <color name="colorAssetGreen">#40C351</color>
+    <color name="colorAssetGreenCentre">#22812E</color>
+    <color name="colorAssetGreenDark">#03490C</color>
+
+    <color name="colorPrimaryText">#212121</color>
+    <color name="colorPrimaryTextDark">#142232</color>
+    <color name="colorSecondaryText">#757575</color>
+    <color name="colorDateText">#70797f</color>
+    <color name="colorBgInput">#ECECEC</color>
+    <color name="colorBgIcon">#33FFFFFF</color>
+    <color name="colorErrorText">#B00020</color>
+    <color name="colorBgReceivedMsg">#090D16</color>
+
+    <color name="colorVividCyan">#03DAC5</color>
+    <color name="colorLightGreen">#90cea1</color>
+    <color name="colorBlue">#0c4aab</color>
+    <color name="colorLightBlue">#3c6ebb</color>
+    <color name="colorDarkBlue">#093b88</color>
+    <color name="colorBlack20">#5d686b</color>
+    <color name="colorDarkCharcoal">#333333</color>
+    <color name="colorGray">#7C7C7C</color>
+    <color name="colorLightGray">#cfd8df</color>
+    <color name="colorThinGray">#407C7C7C</color>
+    <color name="colorDarkGray">#454545</color>
+    <color name="colorUnselectedText">#DCDCDC</color>
+    <color name="colorDarkGreen">#18C872</color>
+    <color name="colorDullGreen">#B31A3D27</color>
+    <color name="colorDarkRed">#D60909</color>
+    <color name="colorDullRed">#B35C2525</color>
+    <color name="colorHintText">#5d6480</color>
+    <color name="colorEditText">#161716</color>
+    <color name="colorCakskillWhite">#ecf1f6</color>
+    <color name="colorDesertStorm">#f5f5f4</color>
+</resources>

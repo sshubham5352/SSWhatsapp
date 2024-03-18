@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <RelativeLayout
+        android:id="@+id/root_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context="com.example.sswhatsapp.activities.SignUpActivity">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:contentDescription="@string/makes_screen_scrollable"
+            android:fitsSystemWindows="true"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="@dimen/padding_horizontal_layout_x_large"
+                android:paddingVertical="@dimen/padding_vertical_layout_large"
+                tools:context="com.example.sswhatsapp.activities.SignUpActivity">
+
+                <androidx.constraintlayout.utils.widget.ImageFilterView
+                    android:id="@+id/img_app_icon"
+                    android:layout_width="@dimen/size_standard_app_icon"
+                    android:layout_height="@dimen/size_standard_app_icon"
+                    android:src="@drawable/app_icon"
+                    app:layout_constraintEnd_toStartOf="@id/txt_layout_title"
+                    app:layout_constraintHorizontal_chainStyle="packed"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/txt_layout_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/source_sans_pro_bold"
+                    android:text="@string/app_name"
+                    android:textColor="@color/colorPrimaryText"
+                    android:textSize="@dimen/size_layout_title"
+                    app:layout_constraintBottom_toBottomOf="@id/img_app_icon"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/img_app_icon"
+                    app:layout_constraintTop_toTopOf="@id/img_app_icon" />
+
+                <TextView
+                    android:id="@+id/txt_create_new_account"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    android:fontFamily="@font/source_sans_pro_bold"
+                    android:gravity="center"
+                    android:text="@string/create_new_account"
+                    android:textColor="@color/colorSecondaryText"
+                    android:textSize="@dimen/size_layout_sub_title"
+                    app:layout_constraintTop_toBottomOf="@id/txt_layout_title" />
+
+
+                <com.makeramen.roundedimageview.RoundedImageView
+                    android:id="@+id/img_user_profile"
+                    android:layout_width="@dimen/size_profile_image_large"
+                    android:layout_height="@dimen/size_profile_image_large"
+                    android:layout_marginTop="20dp"
+                    android:elevation="4dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/img_male_icon"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/txt_create_new_account"
+                    app:riv_border_color="@color/colorDarkCharcoal"
+                    app:riv_border_width="1dp"
+                    app:riv_oval="true" />
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/shape_rectangle_curved_green_gradient"
+                    android:elevation="8dp"
+                    android:padding="7dp"
+                    android:src="@drawable/img_camera_white"
+                    app:layout_constraintBottom_toBottomOf="@id/img_user_profile"
+                    app:layout_constraintEnd_toEndOf="@id/img_user_profile" />
+
+                <TextView
+                    android:id="@+id/txt_gender"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/source_sans_pro_semi_bold"
+                    android:text="@string/gender"
+                    android:textColor="@color/colorHintText"
+                    android:textSize="14sp"
+                    app:layout_constraintBottom_toBottomOf="@id/radio_group_gender"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/radio_group_gender" />
+
+                <RadioGroup
+                    android:id="@+id/radio_group_gender"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/txt_gender"
+                    app:layout_constraintTop_toBottomOf="@id/img_user_profile">
+
+                    <RadioButton
+                        android:id="@+id/radio_btn_male"
+                        style="@style/StyleStandardRadioBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/margin_horizontal_radio_btn"
+                        android:checked="true"
+                        android:text="@string/male" />
+
+                    <RadioButton
+                        android:id="@+id/radio_btn_female"
+                        style="@style/StyleStandardRadioBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/margin_horizontal_radio_btn"
+                        android:text="@string/female" />
+
+                    <RadioButton
+                        android:id="@+id/radio_btn_others"
+                        style="@style/StyleStandardRadioBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/margin_horizontal_radio_btn"
+                        android:text="@string/others" />
+
+                </RadioGroup>
+
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_between_edit_texts"
+                    app:layout_constraintTop_toBottomOf="@id/radio_group_gender">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/name"
+                        style="@style/StyleTextInputEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/img_user_icon"
+                        android:hint="@string/name"
+                        android:inputType="textCapWords"
+                        android:maxLength="26" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_email_id"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_between_edit_texts"
+                    app:layout_constraintTop_toBottomOf="@id/layout_name">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/email_id"
+                        style="@style/StyleTextInputEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/img_email_icon"
+                        android:hint="@string/email_id"
+                        android:inputType="textEmailAddress" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_mobile_number"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_between_edit_texts"
+                    app:layout_constraintTop_toBottomOf="@id/layout_email_id">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/mobile_number"
+                        style="@style/StyleTextInputEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/img_mobile_icon"
+                        android:hint="@string/mobile_no"
+                        android:inputType="phone"
+                        android:maxLength="10" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_between_edit_texts"
+                    app:layout_constraintTop_toBottomOf="@id/layout_mobile_number">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/password"
+                        style="@style/StyleTextInputEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/img_lock_icon"
+                        android:hint="@string/password"
+                        android:inputType="textPassword"
+                        android:maxLength="@integer/max_password_length" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/layout_confirm_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_between_edit_texts"
+                    app:layout_constraintTop_toBottomOf="@id/layout_password">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/confirm_password"
+                        style="@style/StyleTextInputEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/img_lock_icon"
+                        android:hint="@string/confirm_password"
+                        android:inputType="textPassword"
+                        android:maxLength="@integer/max_password_length" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/btn_sign_up"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="40dp"
+                    android:background="@drawable/shape_rectangle_curved_green_gradient"
+                    android:elevation="4dp"
+                    android:fontFamily="@font/source_sans_pro_bold"
+                    android:text="@string/sign_up"
+                    android:textColor="@color/colorWhite"
+                    android:textSize="@dimen/size_btn_standard"
+                    app:layout_constraintTop_toBottomOf="@id/layout_confirm_password" />
+
+                <TextView
+                    android:id="@+id/txt_have_account"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:fontFamily="@font/source_sans_pro_bold_it"
+                    android:text="@string/already_have_an_account"
+                    android:textColor="@color/colorPrimaryText"
+                    android:textSize="@dimen/size_tagline_small"
+                    app:layout_constraintEnd_toStartOf="@id/btn_log_in"
+                    app:layout_constraintHorizontal_chainStyle="packed"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/btn_sign_up" />
+
+                <TextView
+                    android:id="@+id/btn_log_in"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/source_sans_pro_semi_bold"
+                    android:padding="6dp"
+                    android:text="@string/log_in"
+                    android:textColor="@color/colorDarkGreen"
+                    android:textSize="@dimen/size_btn_medium"
+                    app:layout_constraintBaseline_toBaselineOf="@id/txt_have_account"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/txt_have_account" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+    </RelativeLayout>
+</layout>

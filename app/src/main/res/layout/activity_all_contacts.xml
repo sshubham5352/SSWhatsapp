@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.sswhatsapp.activities.AllContactsActivity">
+
+    <RelativeLayout
+        android:id="@id/root_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:layout_alignParentTop="true"
+            android:background="@color/colorCakskillWhite"
+            android:contentInsetStartWithNavigation="0dp"
+            android:elevation="@dimen/standard_elevation"
+            android:navigationIcon="@drawable/img_back_arrow_icon">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/title_toolbar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:fontFamily="@font/source_sans_pro_regular"
+                        android:text="@string/select_contact"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="@dimen/size_toolbar_title" />
+
+
+                    <TextView
+                        android:id="@+id/no_of_contacts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start"
+                        android:fontFamily="@font/source_sans_pro_regular"
+                        android:text="@string/_0_contacts"
+                        android:textColor="@color/colorBlack"
+                        android:textSize="@dimen/size_toolbar_sub_title" />
+
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/search_contact"
+                    android:layout_width="@dimen/size_toolbar_icon"
+                    android:layout_height="@dimen/size_toolbar_icon"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="8dp"
+                    android:layout_toStartOf="@id/toolbar_menu_btn"
+                    android:paddingHorizontal="@dimen/padding_horizontal_toolbar_icon"
+                    android:src="@drawable/img_search_icon" />
+
+                <ImageView
+                    android:id="@+id/toolbar_menu_btn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true"
+                    android:paddingStart="@dimen/padding_horizontal_toolbar_icon"
+                    android:paddingEnd="@dimen/padding_horizontal_toolbar"
+                    android:src="@drawable/res_three_dots_icon" />
+            </RelativeLayout>
+        </Toolbar>
+
+        <View
+            android:id="@+id/toolbar_bottom_line"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/height_toolbar_bottom_line"
+            android:layout_below="@id/toolbar"
+            android:background="@color/colorCakskillWhite" />
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_below="@id/toolbar_bottom_line"
+            android:layout_alignParentBottom="true"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="@dimen/padding_horizontal_layout"
+                android:paddingVertical="@dimen/padding_vertical_layout">
+
+                <LinearLayout
+                    android:id="@+id/layout_ss_users"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/source_sans_pro_semi_bold"
+                        android:text="@string/contacts_on_ss_whatsapp"
+                        android:textColor="@color/colorGray"
+                        android:textSize="14sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_ss_contacts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:overScrollMode="never" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_non_ss_users"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/layout_ss_users"
+                    android:layout_marginTop="40dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/source_sans_pro_semi_bold"
+                        android:text="@string/contacts_yet_to_come_on_ss_whatsapp"
+                        android:textColor="@color/colorGray"
+                        android:textSize="14sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_non_ss_contacts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:overScrollMode="never" />
+                </LinearLayout>
+
+            </RelativeLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <LinearLayout
+            android:id="@+id/layout_permission_not_granted"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.airbnb.lottie.LottieAnimationView
+                android:layout_width="@dimen/size_standard_lottie_anim"
+                android:layout_height="@dimen/size_standard_lottie_anim"
+                app:lottie_autoPlay="true"
+                app:lottie_loop="true"
+                app:lottie_rawRes="@raw/permission_denied_lottie" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/source_sans_pro_semi_bold"
+                android:text="@string/please_allow_contacts_permission"
+                android:textAlignment="center"
+                android:textColor="@color/colorGray"
+                android:textSize="@dimen/size_standard_messages" />
+        </LinearLayout>
+
+    </RelativeLayout>
+</layout>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:orientation="vertical"
+        android:paddingVertical="@dimen/margin_vertical_date_header">
+
+        <TextView
+            android:id="@+id/banner_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_chat_date_banner"
+            android:elevation="@dimen/elevation_low"
+            android:fontFamily="@font/source_sans_pro_semi_bold"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4.5dp"
+            android:text="28 February 2024"
+            android:textColor="@color/colorDateText"
+            android:textSize="13sp" />
+    </LinearLayout>
+</layout>

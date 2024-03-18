@@ -1,0 +1,12 @@
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:colorPrimary">@color/colorAssetGreen</item>
+        <item name="android:statusBarColor">@color/colorBlack</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <style name="ThemeSignUpActivity" parent="AppTheme">
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+</resources>
