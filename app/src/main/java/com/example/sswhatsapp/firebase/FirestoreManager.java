@@ -5,10 +5,11 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.example.sswhatsapp.models.ChatItemResponse;
-import com.example.sswhatsapp.models.ConnectionsListItemResponse;
+import com.example.sswhatsapp.models.InterConnection;
 import com.example.sswhatsapp.models.UserDetailsResponse;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.FirestoreHelper;
+import com.example.sswhatsapp.utils.Helper;
 import com.example.sswhatsapp.utils.SessionManager;
 import com.example.sswhatsapp.utils.TimeHandler;
 import com.google.firebase.firestore.CollectionReference;
@@ -21,6 +22,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -30,13 +32,19 @@ public class FirestoreManager {
     private final FirebaseFirestore firestoreDb;
     private FirebaseStorage firebaseStorage;
     private final FirestoreNetworkCallListener mListener;
-    private final ProgressDialog progressDialog;
+    private ProgressDialog progressDialog;
     private int noOfCallsInProgress;
 
 
+    //Constructor FOR SERVICE
+    public FirestoreManager(FirestoreNetworkCallListener listener) {
+        firestoreDb = FirebaseClients.getFirestoreDb();
+        mListener = listener;
+    }
+
     //Constructor
     public FirestoreManager(Context context, FirestoreNetworkCallListener listener) {
-        firestoreDb = FirestoreClient.getFirestoreDb();
+        firestoreDb = FirebaseClients.getFirestoreDb();
         mListener = listener;
 
         //init progressBar
@@ -47,7 +55,7 @@ public class FirestoreManager {
     }
 
     private void initFirebaseStorage() {
-        if (firebaseStorage == null) firebaseStorage = FirestoreClient.getFirebaseStorage();
+        if (firebaseStorage == null) firebaseStorage = FirebaseClients.getFirebaseStorage();
     }
 
     //SETTING LISTENER
@@ -59,6 +67,27 @@ public class FirestoreManager {
                         .whereGreaterThan(FirebaseConstants.KEY_TIME_STAMP, lastReceivedChatTimeStamp)
                         .addSnapshotListener(listener);
         return listenerRegistration;
+    }
+
+    public void getFCMToken() {
+        progressDialog.setMessage("Fetching FCM Token...");
+        noOfCallsInProgress++;
+        progressDialog.show();
+
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && !Helper.isNill(task.getResult())) {
+                mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_FCM_TOKEN_CALL);
+            } else {
+                mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + task.getException().getMessage());
+            }
+            if ((--noOfCallsInProgress) == 0)
+                progressDialog.dismiss();
+
+        }).addOnFailureListener(e -> {
+            mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+            if ((--noOfCallsInProgress) == 0)
+                progressDialog.dismiss();
+        });
     }
 
     public void uploadUserProfileImageToFirebase(Uri imageUri) {
@@ -98,17 +127,41 @@ public class FirestoreManager {
                 });
     }
 
+    public void updateFcmTokenField(String userId, String fcmToken) {
+        progressDialog.setMessage("Sending FCM Token...");
+        noOfCallsInProgress++;
+        progressDialog.show();
+
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USERS)
+                .document(userId)
+                .update(FirebaseConstants.KEY_FCM_TOKEN, fcmToken)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        mListener.onFirestoreNetworkCallSuccess(fcmToken, FirebaseConstants.UPDATE_FIELD_FCM_TOKEN);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                    if ((--noOfCallsInProgress) == 0)
+                        progressDialog.dismiss();
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + e.getMessage());
+                    if ((--noOfCallsInProgress) == 0)
+                        progressDialog.dismiss();
+                });
+    }
+
     public void SignUpUser(UserDetailsResponse userDetailsResponse, String password) {
         /*
          * Signing Up Process (one Time only)
-         * i) Firstly create a user connections document in User Connections collection
-         * ii) After successful creation of the document, create a user document in Users collection
+         * i) Firstly create a user connections document in "User Connections" collection
+         * ii) After successful creation of the document, create a user document in "Users" collection
          *     and save the previously created document reference in this document
          * */
-        createUserConnectionsDoc(userDetailsResponse, password);
+        createUserInterconnectionDoc(userDetailsResponse, password);
     }
 
-    public void createUserConnectionsDoc(UserDetailsResponse userDetailsResponse, String password) {
+
+    public void createUserInterconnectionDoc(UserDetailsResponse userDetailsResponse, String password) {
         progressDialog.setMessage("Signing in...");
         noOfCallsInProgress++;
         progressDialog.show();
@@ -118,12 +171,12 @@ public class FirestoreManager {
         String docId = userDetailsResponse.getUserId() + FirebaseConstants.SUFFIX_DOC_USER_CONNECTIONS;
 
 
-        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
                 .document(docId)
                 .set(doc)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        userDetailsResponse.setMyConnectionsListRef(docId);
+                        userDetailsResponse.setMyInterconnectionsDocId(docId);
                         createUserAccount(userDetailsResponse, password);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.IMAGE_NOT_UPLOADED_ERROR);
@@ -144,6 +197,7 @@ public class FirestoreManager {
 
         HashMap<String, Object> userDocument = new HashMap<>();
         userDocument.put(FirebaseConstants.KEY_USER_ID, userDetailsResponse.getUserId());
+        userDocument.put(FirebaseConstants.KEY_FCM_TOKEN, userDetailsResponse.getFcmToken());
         userDocument.put(FirebaseConstants.KEY_USER_NAME, userDetailsResponse.getName());
         userDocument.put(FirebaseConstants.KEY_USER_GENDER, userDetailsResponse.getGender());
         userDocument.put(FirebaseConstants.KEY_USER_EMAIL_ID, userDetailsResponse.getEmailId());
@@ -151,8 +205,8 @@ public class FirestoreManager {
         userDocument.put(FirebaseConstants.KEY_USER_TAGLINE, userDetailsResponse.getTagline());
         userDocument.put(FirebaseConstants.KEY_USER_PASSWORD, password);
         userDocument.put(FirebaseConstants.KEY_ACCOUNT_CREATED_ON, userDetailsResponse.getCreatedOn());
-        userDocument.put(FirebaseConstants.KEY_USER_PROFILE_IMG_URL, userDetailsResponse.getImgProfile());
-        userDocument.put(FirebaseConstants.KEY_CONNECTIONS_REF, userDetailsResponse.getMyConnectionsListRef());
+        userDocument.put(FirebaseConstants.KEY_USER_PROFILE_IMG_URL, userDetailsResponse.getProfileImgUrl());
+        userDocument.put(FirebaseConstants.KEY_MY_INTERCONNECTIONS_DOC_ID, userDetailsResponse.getMyInterconnectionsDocId());
 
         firestoreDb.collection(FirebaseConstants.COLLECTION_USERS)
                 .document(userDetailsResponse.getUserId())
@@ -167,6 +221,25 @@ public class FirestoreManager {
                         progressDialog.dismiss();
                 }).addOnFailureListener(e -> {
                     mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + e.getMessage());
+                    if ((--noOfCallsInProgress) == 0)
+                        progressDialog.dismiss();
+                });
+    }
+
+    public void getUserById(String userId) {
+        CollectionReference usersFolderRef = firestoreDb.collection(FirebaseConstants.COLLECTION_USERS);
+        Query query = usersFolderRef.whereEqualTo(FirebaseConstants.KEY_USER_ID, userId);
+        query.get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_USER_BY_MOBILE_NO_CALL);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                    if ((--noOfCallsInProgress) == 0)
+                        progressDialog.dismiss();
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                     if ((--noOfCallsInProgress) == 0)
                         progressDialog.dismiss();
                 });
@@ -270,7 +343,7 @@ public class FirestoreManager {
                 });
     }
 
-    public void addParticipantsInConnection(String connectionId, String myUserId, String otherUserId) {
+    public void addParticipantsInConnection(String connectionId, String myUserId, String connectionWith) {
         progressDialog.setMessage("Please wait...");
         noOfCallsInProgress++;
         progressDialog.show();
@@ -287,7 +360,7 @@ public class FirestoreManager {
                 .collection(FirebaseConstants.COLLECTION_CONNECTIONS)
                 .document(connectionId)
                 .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
-                .document(FirestoreHelper.createParticipantName(otherUserId));
+                .document(FirestoreHelper.createParticipantName(connectionWith));
 
 
         HashMap<String, Object> participant1Data = new HashMap<>();
@@ -295,7 +368,7 @@ public class FirestoreManager {
         participant1Data.put(FirebaseConstants.KEY_IS_TYPING, false);
 
         HashMap<String, Object> participant2Data = new HashMap<>();
-        participant2Data.put(FirebaseConstants.KEY_USER_ID, otherUserId);
+        participant2Data.put(FirebaseConstants.KEY_USER_ID, connectionWith);
         participant2Data.put(FirebaseConstants.KEY_IS_TYPING, false);
 
 
@@ -307,7 +380,7 @@ public class FirestoreManager {
         queriesBatch.commit()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        ConnectionsListItemResponse connectionRef = new ConnectionsListItemResponse(connectionId, otherUserId);
+                        InterConnection connectionRef = new InterConnection(connectionId, connectionWith, true);
                         mListener.onFirestoreNetworkCallSuccess(connectionRef, FirebaseConstants.CREATE_NEW_CONNECTION_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(connectionId, FirebaseConstants.CREATE_NEW_CONNECTION_CALL);
@@ -322,21 +395,20 @@ public class FirestoreManager {
                 });
     }
 
-    public void getMyConnection(String myConnectionsListRef, String userId) {
+    public void getMyInterconnection(String myInterconnectionsDocId, String userId) {
         progressDialog.setMessage("Please wait...");
         noOfCallsInProgress++;
         progressDialog.show();
 
-        Query query = firestoreDb.collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
-                .document(myConnectionsListRef)
-                .collection(FirebaseConstants.COLLECTION_MY_CONNECTIONS)
+        Query query = firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                .document(myInterconnectionsDocId)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
                 .whereEqualTo(FirebaseConstants.KEY_CONNECTIONS_WITH, userId);
 
         query.get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        ConnectionsListItemResponse.CustomMyConnectionResponse response = new ConnectionsListItemResponse.CustomMyConnectionResponse(task.getResult(), userId);
-                        mListener.onFirestoreNetworkCallSuccess(response, FirebaseConstants.GET_MY_CONNECTION_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_MY_INTERCONNECTION_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                     }
@@ -349,59 +421,59 @@ public class FirestoreManager {
                 });
     }
 
-    public void addConnectionToMyList(String myConnectionsListRef, ConnectionsListItemResponse newConnection) {
+    public void createMyInterconnection(String myInterconnectionsDocId, InterConnection myInterconnection) {
         progressDialog.setMessage("Please wait...");
         noOfCallsInProgress++;
         progressDialog.show();
 
         HashMap<String, Object> doc = new HashMap<>();
-        doc.put(FirebaseConstants.KEY_CONNECTIONS_REF, newConnection.getConnectionId());
-        doc.put(FirebaseConstants.KEY_CONNECTION_WITH, newConnection.getConnectionWith());
-        doc.put(FirebaseConstants.KEY_IS_ERADICATED, newConnection.isEradicated());
+        doc.put(FirebaseConstants.KEY_CONNECTION_ID, myInterconnection.getConnectionId());
+        doc.put(FirebaseConstants.KEY_CONNECTION_WITH, myInterconnection.getConnectionWith());
+        doc.put(FirebaseConstants.KEY_IS_ERADICATED, myInterconnection.isEradicated());
 
-        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
-                .document(myConnectionsListRef)
-                .collection(FirebaseConstants.COLLECTION_MY_CONNECTIONS)
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                .document(myInterconnectionsDocId)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
                 .add(doc)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(newConnection.connectionId, FirebaseConstants.ADD_REF_TO_MY_CONNECTIONS_LIST_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
                     } else {
-                        mListener.onFirestoreNetworkCallFailure(newConnection, FirebaseConstants.ADD_REF_TO_MY_CONNECTIONS_LIST_CALL);
+                        mListener.onFirestoreNetworkCallFailure(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
                     }
                     if ((--noOfCallsInProgress) == 0)
                         progressDialog.dismiss();
                 }).addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(newConnection, FirebaseConstants.ADD_REF_TO_MY_CONNECTIONS_LIST_CALL);
+                    mListener.onFirestoreNetworkCallFailure(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
                     if ((--noOfCallsInProgress) == 0)
                         progressDialog.dismiss();
                 });
     }
 
-    public void addConnectionToOtherUserList(String connectionsListRef, ConnectionsListItemResponse newConnection) {
+    public void createReceiversInterconnection(String connectionsListRef, InterConnection receiverInterconnection) {
         progressDialog.setMessage("Please wait...");
         noOfCallsInProgress++;
         progressDialog.show();
 
         HashMap<String, Object> doc = new HashMap<>();
-        doc.put(FirebaseConstants.KEY_CONNECTIONS_REF, newConnection.getConnectionId());
-        doc.put(FirebaseConstants.KEY_CONNECTION_WITH, newConnection.getConnectionWith());
-        doc.put(FirebaseConstants.KEY_IS_ERADICATED, newConnection.isEradicated());
+        doc.put(FirebaseConstants.KEY_CONNECTION_ID, receiverInterconnection.getConnectionId());
+        doc.put(FirebaseConstants.KEY_CONNECTION_WITH, receiverInterconnection.getConnectionWith());
+        doc.put(FirebaseConstants.KEY_IS_ERADICATED, receiverInterconnection.isEradicated());
 
-        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
                 .document(connectionsListRef)
-                .collection(FirebaseConstants.COLLECTION_MY_CONNECTIONS)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
                 .add(doc)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(newConnection.connectionId, FirebaseConstants.ADD_REF_TO_OTHERS_CONNECTIONS_LIST_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(receiverInterconnection, FirebaseConstants.CREATE_RECEIVERS_INTERCONNECTION_CALL);
                     } else {
-                        mListener.onFirestoreNetworkCallFailure(newConnection, FirebaseConstants.ADD_REF_TO_OTHERS_CONNECTIONS_LIST_CALL);
+                        mListener.onFirestoreNetworkCallFailure(receiverInterconnection.getConnectionId(), FirebaseConstants.CREATE_RECEIVERS_INTERCONNECTION_CALL);
                     }
                     if ((--noOfCallsInProgress) == 0)
                         progressDialog.dismiss();
                 }).addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(newConnection, FirebaseConstants.ADD_REF_TO_OTHERS_CONNECTIONS_LIST_CALL);
+                    mListener.onFirestoreNetworkCallFailure(receiverInterconnection.getConnectionId(), FirebaseConstants.CREATE_RECEIVERS_INTERCONNECTION_CALL);
                     if ((--noOfCallsInProgress) == 0)
                         progressDialog.dismiss();
                 });
@@ -437,9 +509,9 @@ public class FirestoreManager {
 
 
         CollectionReference collectionRef = firestoreDb
-                .collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
+                .collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
                 .document(connectionsListRef)
-                .collection(FirebaseConstants.COLLECTION_MY_CONNECTIONS);
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS);
 
         Query query = collectionRef.whereEqualTo(FirebaseConstants.KEY_CONNECTIONS_WITH, connectionWith);
         query.get()
@@ -465,7 +537,7 @@ public class FirestoreManager {
         doc.put(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_SENT);
         doc.put(FirebaseConstants.KEY_SENDER_ID, chatItem.getSenderId());
         doc.put(FirebaseConstants.KEY_RECEIVER_ID, chatItem.getReceiverId());
-        doc.put(FirebaseConstants.KEY_MESSAGE, chatItem.getMessage());
+        doc.put(FirebaseConstants.KEY_CHAT_MESSAGE, chatItem.getMessage());
         doc.put(FirebaseConstants.KEY_TIME_STAMP, chatItem.getTimeStamp());
         doc.put(FirebaseConstants.KEY_IS_STARED, chatItem.isStared());
         doc.put(FirebaseConstants.KEY_IS_DELETED_BY_SENDER, chatItem.isDeletedBySender());
@@ -504,7 +576,7 @@ public class FirestoreManager {
         query.get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.FETCH_ALL_MESSAGES_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.FETCH_ALL_CHATS_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                     }
@@ -517,21 +589,58 @@ public class FirestoreManager {
                 });
     }
 
-    public void updateIsEradicatedField(String myConnectionsListRef, String connectionWith, boolean isEradicated) {
+    public void updateMyIsEradicatedField(String myInterconnectionsDocId, String connectionWith, boolean isEradicated) {
 
-        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
-                .document(myConnectionsListRef)
-                .collection(FirebaseConstants.COLLECTION_MY_CONNECTIONS)
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                .document(myInterconnectionsDocId)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
                 .whereEqualTo(FirebaseConstants.KEY_CONNECTIONS_WITH, connectionWith)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         String docId = task.getResult().getDocuments().get(0).getId();
-                        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_CONNECTIONS)
-                                .document(myConnectionsListRef)
-                                .collection(FirebaseConstants.COLLECTION_MY_CONNECTIONS)
+                        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                                .document(myInterconnectionsDocId)
+                                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
                                 .document(docId)
                                 .update(FirebaseConstants.KEY_IS_ERADICATED, isEradicated)
+                                .addOnSuccessListener(unused -> {
+                                    mListener.onFirestoreNetworkCallSuccess(isEradicated, FirebaseConstants.UPDATE_MY_IS_ERADICATED_FIELD_CALL);
+                                })
+                                .addOnFailureListener(e -> {
+                                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                                });
+
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                }).
+
+                addOnFailureListener(e ->
+
+                {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                });
+    }
+
+    public void updateReceiversIsEradicatedField(String myInterconnectionsDocId, String connectionWith, boolean isEradicated) {
+
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                .document(myInterconnectionsDocId)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
+                .whereEqualTo(FirebaseConstants.KEY_CONNECTIONS_WITH, connectionWith)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        String docId = task.getResult().getDocuments().get(0).getId();
+                        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                                .document(myInterconnectionsDocId)
+                                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
+                                .document(docId)
+                                .update(FirebaseConstants.KEY_IS_ERADICATED, isEradicated)
+                                .addOnSuccessListener(unused -> {
+                                    mListener.onFirestoreNetworkCallSuccess(isEradicated, FirebaseConstants.UPDATE_RECEIVERS_IS_ERADICATED_FIELD_CALL);
+                                })
                                 .addOnFailureListener(e -> {
                                     mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                                 });

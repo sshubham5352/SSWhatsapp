@@ -33,6 +33,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     private FirestoreManager firestoreManager;
     private InputMethodManager imm;
     private Uri imgProfileUri;
+    private String fcmToken;
 
 
     @Override
@@ -58,7 +59,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
             if (areSignupFieldsValid()) {
                 imm.hideSoftInputFromWindow(binding.rootLayout.getWindowToken(), 0); // closing soft keyboard
                 binding.rootLayout.scrollTo(0, 0);
-                searchUserByMobileNumber();
+                getFCMToken();
             }
         } else if (view.getId() == R.id.img_user_profile) {
             importImgFromDevice();
@@ -157,6 +158,11 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     //NETWORK CALL
+    private void getFCMToken() {
+        firestoreManager.getFCMToken();
+    }
+
+    //NETWORK CALL
     private void searchUserByMobileNumber() {
         firestoreManager.getUserByMobileNo(binding.mobileNumber.getText().toString().trim());
     }
@@ -179,7 +185,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         String emailId = binding.emailId.getText().toString().trim();
         String mobileNo = binding.mobileNumber.getText().toString().trim();
         String createdOn = TimeHandler.getCurrentTimeStamp();
-        UserDetailsResponse userDetailsResponse = new UserDetailsResponse(userId, name, gender, emailId, mobileNo, createdOn, imgProfile);
+        UserDetailsResponse userDetailsResponse = new UserDetailsResponse(userId, fcmToken, name, gender, emailId, mobileNo, createdOn, imgProfile);
 
         firestoreManager.SignUpUser(userDetailsResponse, binding.password.getText().toString().trim());
     }
@@ -213,18 +219,13 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     @Override
     public void onFirestoreNetworkCallSuccess(Object response, int serviceCode) {
         switch (serviceCode) {
-            case FirebaseConstants.SIGN_UP_USER_CALL:
-                Toast.makeText(this, "User successfully signed in!", Toast.LENGTH_LONG).show();
-                SessionManager.createUserSession((UserDetailsResponse) response);
-                startMainActivity();
+            case FirebaseConstants.GET_FCM_TOKEN_CALL: {
+                fcmToken = (String) response;
+                searchUserByMobileNumber();
                 break;
+            }
 
-            case FirebaseConstants.UPLOAD_USER_PROFILE_IMG_CALL:
-                Uri uri = (Uri) response;
-                signUpUser(uri.toString());
-                break;
-
-            case FirebaseConstants.GET_USER_BY_MOBILE_NO_CALL:
+            case FirebaseConstants.GET_USER_BY_MOBILE_NO_CALL: {
                 QuerySnapshot snapshot = (QuerySnapshot) response;
                 if (snapshot.getDocuments().size() == 0) {
                     searchUserByEmailId();
@@ -232,9 +233,10 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
                     Toast.makeText(this, "Mobile no already in use.\nPlease Log in...", Toast.LENGTH_LONG).show();
                 }
                 break;
+            }
 
-            case FirebaseConstants.GET_USER_BY_EMAIL_ID_CALL:
-                snapshot = (QuerySnapshot) response;
+            case FirebaseConstants.GET_USER_BY_EMAIL_ID_CALL: {
+                QuerySnapshot snapshot = (QuerySnapshot) response;
                 if (snapshot.getDocuments().size() == 0) {
                     if (imgProfileUri != null)
                         uploadUserProfileImageToFirebase();
@@ -243,6 +245,19 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
                 } else {
                     Toast.makeText(this, "Email Id already in use.\nPlease Log in...", Toast.LENGTH_LONG).show();
                 }
+                break;
+            }
+
+            case FirebaseConstants.UPLOAD_USER_PROFILE_IMG_CALL: {
+                Uri uri = (Uri) response;
+                signUpUser(uri.toString());
+                break;
+            }
+
+            case FirebaseConstants.SIGN_UP_USER_CALL:
+                Toast.makeText(this, "User successfully signed in!", Toast.LENGTH_LONG).show();
+                SessionManager.createUserSession((UserDetailsResponse) response);
+                startMainActivity();
                 break;
         }
     }

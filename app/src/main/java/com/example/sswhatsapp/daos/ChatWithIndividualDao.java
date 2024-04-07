@@ -10,7 +10,11 @@ import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
 import com.example.sswhatsapp.listeners.ChatWIthIndividualDaoListener;
 import com.example.sswhatsapp.models.ChatItemResponse;
+import com.example.sswhatsapp.models.InterConnection;
 import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.retrofit.RetrofitConstants;
+import com.example.sswhatsapp.retrofit.RetrofitManager;
+import com.example.sswhatsapp.retrofit.RetrofitNetworkCallListener;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.TimeHandler;
 import com.google.firebase.firestore.DocumentChange;
@@ -19,43 +23,47 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.LinkedList;
 import java.util.List;
 
-public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
+public class ChatWithIndividualDao implements FirestoreNetworkCallListener, RetrofitNetworkCallListener {
     //fields
     AppCompatActivity mActivity;
-    private UserDetailsResponse connectionWithUser;
-    private String myConnectionsListRef;
+    private final FirestoreManager firestoreManager;
+    private final RetrofitManager retrofitManager;
+    private final UserDetailsResponse senderUser, receiverUser;
+    private final InterConnection myInterconnection, receiversInterconnection;
+    private final ChatWIthIndividualDaoListener mListener;
     private List<ChatItemResponse> chatsList;
-    private ChatWIthIndividualDaoListener mListener;
-    private String connectionId, myUserId;
-    private FirestoreManager firestoreManager;
     private String currentBannerTimeStamp;
-    private boolean isEradicated;
 
     //LISTENERS
     EventListener<QuerySnapshot> chatReceiverListener;
     ListenerRegistration chatReceiverListenerRegistration;
 
     public ChatWithIndividualDao(AppCompatActivity activity, ChatWIthIndividualDaoListener listener,
-                                 UserDetailsResponse connectionWithUser,
-                                 String myConnectionsListRef,
-                                 String connectionId, String myUserId, boolean isEradicated) {
+                                 UserDetailsResponse senderUser,
+                                 UserDetailsResponse receiverUser,
+                                 InterConnection myInterconnection,
+                                 InterConnection receiversInterconnection) {
         mActivity = activity;
         mListener = listener;
-        this.connectionWithUser = connectionWithUser;
-        this.myConnectionsListRef = myConnectionsListRef;
-        this.connectionId = connectionId;
-        this.myUserId = myUserId;
-        this.isEradicated = isEradicated;
+        this.senderUser = senderUser;
+        this.receiverUser = receiverUser;
+        this.myInterconnection = myInterconnection;
+        this.receiversInterconnection = receiversInterconnection;
+
         firestoreManager = new FirestoreManager(activity, this);
+        retrofitManager = new RetrofitManager(this);
         chatsList = new LinkedList<>();
         initChatReceiverListener();
     }
 
     public void attachChatReceiverListener() {
-        if (!isEradicated && chatsList.isEmpty()) {
+        if (!myInterconnection.isEradicated() && chatsList.isEmpty()) {
             /*
              * Case where there are chats between the users but not yet fetched from the server
              * So if we attach the listener in this case the received messaged would be added twice
@@ -64,12 +72,12 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
         }
 
         String lastReceivedChatTimeStamp;
-        if (isEradicated) {
+        if (myInterconnection.isEradicated) {
             lastReceivedChatTimeStamp = TimeHandler.getCurrentTimeStamp();
         } else {
             lastReceivedChatTimeStamp = chatsList.get(getLastChatItemIndex()).getTimeStamp();
         }
-        chatReceiverListenerRegistration = firestoreManager.setIndividualConnectionListener(connectionId, chatReceiverListener, lastReceivedChatTimeStamp);
+        chatReceiverListenerRegistration = firestoreManager.setIndividualConnectionListener(myInterconnection.getConnectionId(), chatReceiverListener, lastReceivedChatTimeStamp);
     }
 
     public void detachChatReceiverListener() {
@@ -86,7 +94,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
                 if (doc.getType() == DocumentChange.Type.ADDED) {
                     String senderId = doc.getDocument().getString(FirebaseConstants.KEY_SENDER_ID);
 
-                    if (senderId.matches(connectionWithUser.getUserId())) {
+                    if (senderId.matches(receiverUser.getUserId())) {
                         ChatItemResponse chatItem = doc.getDocument().toObject(ChatItemResponse.class);
                         chatReceivedSuccess(chatItem);
                     }
@@ -103,16 +111,16 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
         return chatsList.size() - 1;
     }
 
-    public UserDetailsResponse getConnectionWithUser() {
-        return connectionWithUser;
+    public UserDetailsResponse getReceiverUser() {
+        return receiverUser;
     }
 
     public String getConnectionId() {
-        return connectionId;
+        return myInterconnection.getConnectionId();
     }
 
     public String getMyUserId() {
-        return myUserId;
+        return senderUser.getUserId();
     }
 
     public boolean isItTodaysBannerDate() {
@@ -122,7 +130,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
     }
 
     public boolean isEradicated() {
-        return isEradicated;
+        return myInterconnection.isEradicated();
     }
 
     public void addDateBannerInChatList(String standardTimeStamp) {
@@ -140,8 +148,8 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
         }
         ChatItemResponse chatItem = new ChatItemResponse(Constants.CHAT_CATEGORY_MSG,
                 Constants.CHAT_STATUS_PENDING,
-                myUserId,
-                connectionWithUser.getUserId(),
+                senderUser.getUserId(),
+                receiverUser.getUserId(),
                 message,
                 TimeHandler.getCurrentTimeStamp(),
                 false,
@@ -151,10 +159,32 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
         chatsList.add(chatItem);
         mListener.chatAdded(getLastChatItemIndex());
 
-        if (isEradicated) {
-            updateIsEradicatedField(false);
+        if (myInterconnection.isEradicated()) {
+            updateMyIsEradicatedField(false);
+        }
+
+        if (receiversInterconnection.isEradicated) {
+            updateReceiversIsEradicatedField(false);
         }
         return chatItem;
+    }
+
+    //CALL FROM CONTROLLER
+    public void sendNotification(ChatItemResponse chatItem) {
+        JSONObject dataMap = new JSONObject();
+        try {
+            dataMap.put(FirebaseConstants.KEY_USER_ID, senderUser.getUserId());                     //notification sender ID
+            dataMap.put(FirebaseConstants.KEY_USER_MOBILE_NO, senderUser.getMobileNo());
+            dataMap.put(FirebaseConstants.KEY_USER_PROFILE_IMG_URL, senderUser.getProfileImgUrl());
+            dataMap.put(FirebaseConstants.KEY_CONNECTION_ID, myInterconnection.getConnectionId());
+            dataMap.put(FirebaseConstants.KEY_CHAT_ID, chatItem.getChatId());
+            dataMap.put(FirebaseConstants.KEY_CHAT_CATEGORY, Integer.toString(chatItem.getChatCategory()));
+            dataMap.put(FirebaseConstants.KEY_CHAT_MESSAGE, chatItem.getMessage());
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        retrofitManager.sendChatNotificationCall(receiverUser.getFcmToken(), dataMap);
     }
 
 
@@ -192,9 +222,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
             addDateBannerInChatList(TimeHandler.getCurrentTimeStamp());
             mListener.dateBannerAdded(getLastChatItemIndex());
         }
-        if (isEradicated) {
-            updateIsEradicatedField(false);
-        }
+
         chatsList.add(chatItem);
         mListener.chatReceivedSuccess(getLastChatItemIndex());
     }
@@ -202,23 +230,28 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
 
     //NETWORK CALL
     public void sendMessageChat(ChatItemResponse chatItem) {
-        firestoreManager.sendMessageChat(connectionId, chatItem);
+        firestoreManager.sendMessageChat(myInterconnection.getConnectionId(), chatItem);
     }
 
     //NETWORK CALL
     public void fetchAllChats() {
-        firestoreManager.fetchAllChats(connectionId, myUserId);
+        firestoreManager.fetchAllChats(myInterconnection.getConnectionId(), senderUser.getUserId());
     }
 
     //NETWORK CALL
-    public void updateIsEradicatedField(boolean isEradicated) {
-        firestoreManager.updateIsEradicatedField(myConnectionsListRef, connectionWithUser.getUserId(), isEradicated);
+    public void updateMyIsEradicatedField(boolean isEradicated) {
+        firestoreManager.updateMyIsEradicatedField(senderUser.getMyInterconnectionsDocId(), receiverUser.getUserId(), isEradicated);
+    }
+
+    //NETWORK CALL
+    public void updateReceiversIsEradicatedField(boolean isEradicated) {
+        firestoreManager.updateReceiversIsEradicatedField(receiverUser.getMyInterconnectionsDocId(), senderUser.getUserId(), isEradicated);
     }
 
     @Override
     public void onFirestoreNetworkCallSuccess(Object response, int serviceCode) {
         switch (serviceCode) {
-            case FirebaseConstants.FETCH_ALL_MESSAGES_CALL: {
+            case FirebaseConstants.FETCH_ALL_CHATS_CALL: {
                 QuerySnapshot snapshot = (QuerySnapshot) response;
                 ChatItemResponse chatItem;
 
@@ -237,10 +270,19 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
                 attachChatReceiverListener();
                 break;
             }
-            case FirebaseConstants.SEND_MESSAGE_CHAT_CALL:
+            case FirebaseConstants.SEND_MESSAGE_CHAT_CALL: {
                 ChatItemResponse chatItem = (ChatItemResponse) response;
                 chatSentSuccess(chatItem);
                 break;
+            }
+            case FirebaseConstants.UPDATE_MY_IS_ERADICATED_FIELD_CALL: {
+                myInterconnection.setEradicated((boolean) response);
+                break;
+            }
+            case FirebaseConstants.UPDATE_RECEIVERS_IS_ERADICATED_FIELD_CALL: {
+                receiversInterconnection.setEradicated((boolean) response);
+                break;
+            }
         }
 
     }
@@ -257,6 +299,22 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener {
 
     @Override
     public void onFirestoreNetworkCallFailure(String errorMessage) {
+        Log.d(FirebaseConstants.NETWORK_CALL, errorMessage);
+        Toast.makeText(mActivity, errorMessage, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRetrofitNetworkCallSuccess(Object response, int serviceCode) {
+        switch (serviceCode) {
+            case RetrofitConstants.SEND_CHAT_NOTIFICATION_CALL: {
+                Toast.makeText(mActivity, "Notification successfully sent!", Toast.LENGTH_LONG).show();
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void onRetrofitNetworkCallFailure(String errorMessage) {
         Log.d(FirebaseConstants.NETWORK_CALL, errorMessage);
         Toast.makeText(mActivity, errorMessage, Toast.LENGTH_LONG).show();
     }

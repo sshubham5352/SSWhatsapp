@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 
 import com.example.sswhatsapp.activities.SignUpActivity;
-import com.example.sswhatsapp.firebase.FirestoreClient;
+import com.example.sswhatsapp.firebase.FirebaseClients;
 import com.example.sswhatsapp.models.UserDetailsResponse;
 
 public class SessionManager {
@@ -24,7 +24,8 @@ public class SessionManager {
     private static final String KEY_USER_MOBILE_NO = "06";
     private static final String KEY_GENDER = "07";
     private static final String KEY_PROFILE_IMG_URL = "08";
-    private static final String KEY_CONNECTIONS_REF = "09";
+    private static final String KEY_MY_INTERCONNECTIONS_DOC_ID = "09";
+    private static final String KEY_FCM_TOKEN = "10";
 
     // Constructor
     private SessionManager() {
@@ -46,13 +47,14 @@ public class SessionManager {
 
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
         editor.putString(KEY_USER_ID, userDetailsResponse.getUserId());
+        editor.putString(KEY_FCM_TOKEN, userDetailsResponse.getFcmToken());
         editor.putString(KEY_USER_FIRST_NAME, firstName);
         editor.putString(KEY_USER_LAST_NAME, lastName);
         editor.putString(KEY_GENDER, userDetailsResponse.getGender());
         editor.putString(KEY_USER_EMAIL, userDetailsResponse.getEmailId());
         editor.putString(KEY_USER_MOBILE_NO, userDetailsResponse.getMobileNo());
-        editor.putString(KEY_PROFILE_IMG_URL, userDetailsResponse.getImgProfile());
-        editor.putString(KEY_CONNECTIONS_REF, userDetailsResponse.getMyConnectionsListRef());
+        editor.putString(KEY_PROFILE_IMG_URL, userDetailsResponse.getProfileImgUrl());
+        editor.putString(KEY_MY_INTERCONNECTIONS_DOC_ID, userDetailsResponse.getMyInterconnectionsDocId());
         // commit changes
         editor.apply();
     }
@@ -61,8 +63,24 @@ public class SessionManager {
         return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false);
     }
 
+    public static UserDetailsResponse getUser() {
+        String id = getUserId();
+        String fcmToken = getFcmToken();
+        String name = getUserName();
+        String mobileNo = getUserMobileNo();
+        String email = getUserEmail();
+        String profileImgUrl = getProfileImgUrl();
+        String connectionsListRef = getMyInterconnectionsDocId();
+
+        return new UserDetailsResponse(id, fcmToken, name, mobileNo, email, profileImgUrl, connectionsListRef);
+    }
+
     public static String getUserId() {
         return sharedPreferences.getString(KEY_USER_ID, null);
+    }
+
+    public static String getFcmToken() {
+        return sharedPreferences.getString(KEY_FCM_TOKEN, null);
     }
 
     public static String getUserFirstName() {
@@ -74,7 +92,12 @@ public class SessionManager {
     }
 
     public static String getUserName() {
-        return sharedPreferences.getString(KEY_USER_FIRST_NAME, null) + sharedPreferences.getString(KEY_USER_LAST_NAME, "");
+        String firstName = getUserFirstName();
+        String lastName = getUserLastName();
+        if (lastName == null) {
+            return firstName;
+        }
+        return firstName + " " + lastName;
     }
 
     public static String getUserEmail() {
@@ -85,18 +108,26 @@ public class SessionManager {
         return sharedPreferences.getString(KEY_USER_MOBILE_NO, null);
     }
 
-    public static String getMyConnectionsListRef() {
-        return sharedPreferences.getString(KEY_CONNECTIONS_REF, null);
+    public static String getMyInterconnectionsDocId() {
+        return sharedPreferences.getString(KEY_MY_INTERCONNECTIONS_DOC_ID, null);
     }
 
     public static String getGenderName() {
         return sharedPreferences.getString(KEY_GENDER, null);
     }
 
+    public static String getProfileImgUrl() {
+        return sharedPreferences.getString(KEY_PROFILE_IMG_URL, null);
+    }
+
+    public static void setFcmToken(String token) {
+        editor.putString(KEY_FCM_TOKEN, token);
+        editor.apply();
+    }
 
     public static void logoutUser(Context context) {
         clearSessionManager();
-        FirestoreClient.destroyAllRetrofitClients();
+        FirebaseClients.destroyAllFirebaseClients();
         redirectToSignUpActivity(context);
     }
 

@@ -3,6 +3,8 @@ package com.example.sswhatsapp.models;
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.google.firebase.firestore.PropertyName;
 
+import java.util.Map;
+
 public class ChatItemResponse {
     //Fields
     @PropertyName(FirebaseConstants.KEY_CHAT_CATEGORY)
@@ -15,7 +17,7 @@ public class ChatItemResponse {
     public String senderId;
     @PropertyName(FirebaseConstants.KEY_RECEIVER_ID)
     public String receiverId;
-    @PropertyName(FirebaseConstants.KEY_MESSAGE)
+    @PropertyName(FirebaseConstants.KEY_CHAT_MESSAGE)
     public String message;
     @PropertyName(FirebaseConstants.KEY_TIME_STAMP)
     public String timeStamp;
@@ -29,6 +31,7 @@ public class ChatItemResponse {
     public boolean isDeletedByReceiver;
 
 
+    //CONSTRUCTOR
     public ChatItemResponse() {
         /*
          * Empty Constructor
@@ -36,6 +39,7 @@ public class ChatItemResponse {
          */
     }
 
+    //CONSTRUCTOR: for new messages
     public ChatItemResponse(int chatCategory, boolean isStared, boolean isDeletedBySender,
                             boolean isDeletedByReceiver, int chatStatus, String message,
                             String timeStamp, String senderId, String receiverId) {
@@ -62,7 +66,7 @@ public class ChatItemResponse {
         this.receiverId = receiverId;
     }
 
-    //CHAT MESSAGE CONSTRUCTOR
+    //CONSTRUCTOR: for chat msg
     public ChatItemResponse(int chatCategory, int chatStatus, String senderId, String receiverId, String message, String timeStamp, boolean isStared, boolean isDeletedBySender, boolean isDeletedByReceiver) {
         this.chatCategory = chatCategory;
         this.chatStatus = chatStatus;
@@ -75,11 +79,18 @@ public class ChatItemResponse {
         this.isDeletedByReceiver = isDeletedByReceiver;
     }
 
-    //DATE BANNER CONSTRUCTOR
+    //CONSTRUCTOR: for date banner
     public ChatItemResponse(int chatCategory, String timeStamp) {
         chatId = "";
         this.chatCategory = chatCategory;
         this.timeStamp = timeStamp;
+    }
+
+    //CONSTRUCTOR: for FCM service
+    public ChatItemResponse(Map<String, String> dataMap) {
+        chatId = dataMap.get(FirebaseConstants.KEY_CHAT_ID);
+        chatCategory = Integer.parseInt(dataMap.get(FirebaseConstants.KEY_CHAT_CATEGORY));
+        message = dataMap.get(FirebaseConstants.KEY_CHAT_MESSAGE);
     }
 
     public String getChatId() {

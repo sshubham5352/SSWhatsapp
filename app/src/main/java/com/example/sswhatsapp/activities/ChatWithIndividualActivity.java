@@ -19,6 +19,7 @@ import com.example.sswhatsapp.databinding.ActivityChatWithIndividualBinding;
 import com.example.sswhatsapp.listeners.ChatWIthIndividualDaoListener;
 import com.example.sswhatsapp.listeners.ChatWithIndividualAdapterListener;
 import com.example.sswhatsapp.models.ChatItemResponse;
+import com.example.sswhatsapp.models.InterConnection;
 import com.example.sswhatsapp.models.UserDetailsResponse;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
@@ -72,19 +73,20 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
 
     private void initDao() {
         Intent intent = getIntent();
-        UserDetailsResponse connectionWithUser = (UserDetailsResponse) intent.getSerializableExtra(Constants.INTENT_USER_DETAILS_EXTRA);
-        String myConnectionsListRef = SessionManager.getMyConnectionsListRef();
-        String connectionId = (String) intent.getStringExtra(Constants.INTENT_CONNECTION_ID_EXTRA);
-        String myUserId = SessionManager.getUserId();
-        boolean isEradicated = (Boolean) intent.getBooleanExtra(Constants.INTENT_IS_ERADICATED, true);
+        UserDetailsResponse receiverUserDetails = (UserDetailsResponse) intent.getSerializableExtra(Constants.INTENT_USER_DETAILS_EXTRA);
+        InterConnection myInterconnection = (InterConnection) intent.getSerializableExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA);
+        InterConnection receiversInterconnection = (InterConnection) intent.getSerializableExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA);
 
-        chatDao = new ChatWithIndividualDao(this, this, connectionWithUser, myConnectionsListRef, connectionId, myUserId, isEradicated);
+        UserDetailsResponse senderUserDetails = SessionManager.getUser();
+
+        chatDao = new ChatWithIndividualDao(this, this,
+                senderUserDetails, receiverUserDetails, myInterconnection, receiversInterconnection);
     }
 
     private void initToolbar() {
-        UserDetailsResponse connectionWithUser = chatDao.getConnectionWithUser();
+        UserDetailsResponse connectionWithUser = chatDao.getReceiverUser();
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        PicassoCache.getPicassoInstance(this).load(connectionWithUser.getImgProfile()).
+        PicassoCache.getPicassoInstance(this).load(connectionWithUser.getProfileImgUrl()).
                 placeholder(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()))
                 .into(binding.imgUserProfile);
         binding.userName.setText(connectionWithUser.getName());
@@ -178,6 +180,7 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
             if (message.length() != 0) {
                 ChatItemResponse chatItem = chatDao.addMessageChat(message);
                 chatDao.sendMessageChat(chatItem);
+                chatDao.sendNotification(chatItem);
             }
         } else if (view.getId() == R.id.btn_mic) {
             return;

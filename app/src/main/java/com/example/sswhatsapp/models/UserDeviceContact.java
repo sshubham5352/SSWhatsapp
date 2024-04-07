@@ -45,21 +45,14 @@ public class UserDeviceContact implements Comparable<UserDeviceContact> {
         return contactList;
     }
 
-    public static String removeCountryCode(String mobileNo) {
-        return mobileNo.substring(mobileNo.length() - 10);
-    }
-
-    public static void removeInvalidNumbers(List<UserDeviceContact> list, boolean removeCountryCode) {
+    public static void removeInvalidNumbers(List<UserDeviceContact> list) {
         int size = list.size();
         for (int i = 0; i < size; i++) {
             if (!isMobileNumberValid(list.get(i).mobileNo)) {
                 list.remove(i);
                 size--;
                 i--;
-                continue;
             }
-            if (removeCountryCode)
-                list.get(i).mobileNo = removeCountryCode(list.get(i).mobileNo);
         }
     }
 
@@ -67,6 +60,9 @@ public class UserDeviceContact implements Comparable<UserDeviceContact> {
         return mobileNo != null && mobileNo.length() >= 10;
     }
 
+    public static String removeCountryCode(String mobileNo) {
+        return mobileNo.substring(mobileNo.length() - 10);
+    }
 
     @Override
     public int compareTo(UserDeviceContact contact2) {

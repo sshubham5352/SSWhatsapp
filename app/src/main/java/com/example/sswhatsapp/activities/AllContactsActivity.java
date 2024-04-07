@@ -21,7 +21,7 @@ import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
 import com.example.sswhatsapp.listeners.NonSSUsersListListener;
 import com.example.sswhatsapp.listeners.SSUsersListListener;
-import com.example.sswhatsapp.models.ConnectionsListItemResponse;
+import com.example.sswhatsapp.models.InterConnection;
 import com.example.sswhatsapp.models.UserDetailsResponse;
 import com.example.sswhatsapp.models.UserDeviceContact;
 import com.example.sswhatsapp.providers.ContactsProvider;
@@ -47,7 +47,8 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     private List<UserDetailsResponse> SSWhatsappUsersList;     //these are the people on SSWhatsapp whose mobile no. is saved in user's phone
     SSUsersListAdapter ssUsersListAdapter;
     NonSSUsersListAdapter nonSSUsersListAdapter;
-    String myUserId, myConnectionsListRef;
+    InterConnection myInterconnection, receiversInterconnection;
+    String myUserId, myInterconnectionsDocId;
 
 
     @Override
@@ -55,7 +56,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_all_contacts);
         myUserId = SessionManager.getUserId();
-        myConnectionsListRef = SessionManager.getMyConnectionsListRef();
+        myInterconnectionsDocId = SessionManager.getMyInterconnectionsDocId();
         firestoreManager = new FirestoreManager(this, this);
         requestUserContactsPermission();
         initToolbar();
@@ -93,7 +94,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
 
     private void getUserDeviceContacts() {
         allContactsList = ContactsProvider.getUserDeviceContacts(this);
-        UserDeviceContact.removeInvalidNumbers(allContactsList, true);
+        UserDeviceContact.removeInvalidNumbers(allContactsList);
         UserDeviceContact.removeNumber(allContactsList, SessionManager.getUserMobileNo());
         Collections.sort(allContactsList);
 
@@ -103,7 +104,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
             Toast.makeText(this, "no contacts found :(", Toast.LENGTH_LONG).show();
     }
 
-    private void initAcquaintanceList(List<UserDetailsResponse> allUsers) {
+    private void initContactLists(List<UserDetailsResponse> allUsers) {
         SSWhatsappUsersList = new ArrayList<>();
         nonSSWhatsappContactList = new ArrayList<>();
 
@@ -185,11 +186,11 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     }
 
     //ACTIVITY LAUNCH
-    void startChatWithIndividualActivity(String connectionId, boolean isEradicated) {
+    void startChatWithIndividualActivity() {
         Intent intent = new Intent(this, ChatWithIndividualActivity.class);
         intent.putExtra(Constants.INTENT_USER_DETAILS_EXTRA, ssUsersListAdapter.selectedUser);
-        intent.putExtra(Constants.INTENT_CONNECTION_ID_EXTRA, connectionId);
-        intent.putExtra(Constants.INTENT_IS_ERADICATED, isEradicated);
+        intent.putExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA, myInterconnection);
+        intent.putExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA, receiversInterconnection);
         startActivity(intent);
         finish();
     }
@@ -201,7 +202,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
 
     //NETWORK CALL
     private void getMyConnection(String userId) {
-        firestoreManager.getMyConnection(myConnectionsListRef, userId);
+        firestoreManager.getMyInterconnection(myInterconnectionsDocId, userId);
     }
 
     //NETWORK CALL
@@ -210,14 +211,14 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     }
 
     //NETWORK CALL
-    private void addConnectionToMyList(ConnectionsListItemResponse connectionDetails) {
-        firestoreManager.addConnectionToMyList(myConnectionsListRef, connectionDetails);
+    private void createMyInterconnection(InterConnection connectionDetails) {
+        firestoreManager.createMyInterconnection(myInterconnectionsDocId, connectionDetails);
     }
 
     //NETWORK CALL
-    private void addConnectionToOthersList(String connectionId) {
-        ConnectionsListItemResponse connectionDetails = new ConnectionsListItemResponse(connectionId, myUserId);
-        firestoreManager.addConnectionToOtherUserList(ssUsersListAdapter.selectedUser.myConnectionsListRef, connectionDetails);
+    private void createReceiversInterconnection(String connectionId) {
+        InterConnection receiverInterconnectionItem = new InterConnection(connectionId, myUserId, true);
+        firestoreManager.createReceiversInterconnection(ssUsersListAdapter.selectedUser.myInterconnectionsDocId, receiverInterconnectionItem);
     }
 
     //NETWORK CALL
@@ -242,61 +243,57 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
                         allUsers.add(doc.toObject(UserDetailsResponse.class));
                 }
 
-                initAcquaintanceList(allUsers);
+                initContactLists(allUsers);
                 setToolbarNoOfContacts();
                 setSSUserListAdapter();
                 binding.layoutSsUsers.setVisibility(View.VISIBLE);
                 break;
             }
 
-            case FirebaseConstants.GET_MY_CONNECTION_CALL: {
-                ConnectionsListItemResponse.CustomMyConnectionResponse connectionResponse = (ConnectionsListItemResponse.CustomMyConnectionResponse) response;
-                ConnectionsListItemResponse myConnection = null;
+            case FirebaseConstants.GET_MY_INTERCONNECTION_CALL: {
+                QuerySnapshot querySnapshot = (QuerySnapshot) response;
 
-                for (DocumentSnapshot doc : connectionResponse.getQuerySnapshot().getDocuments()) {
-                    if (doc.exists())
-                        myConnection = doc.toObject(ConnectionsListItemResponse.class);
-                }
-
-                if (myConnection == null) {
+                if (querySnapshot.size() == 0) {
                     //Connection does not exist in the collection
-                    //So we need to create a new connection
-                    createNewConnection(connectionResponse.getConnectionWith());
+                    //So we need to create a new connection and 2 interconnections for each user
+                    createNewConnection(ssUsersListAdapter.selectedUser.getUserId());
                 } else {
-                    //Connection already exists
-                    startChatWithIndividualActivity(myConnection.getConnectionId(), myConnection.isEradicated());
+                    //Connection exists
+                    myInterconnection = querySnapshot.getDocuments().get(0).toObject(InterConnection.class);
+                    //a time utilization (saving one network call)
+                    receiversInterconnection = new InterConnection(myInterconnection.getConnectionId(), myUserId, true);    // <- a time utilization (saving one network call)
+                    startChatWithIndividualActivity();
                 }
                 break;
             }
 
             case FirebaseConstants.CREATE_NEW_CONNECTION_CALL: {
-                ConnectionsListItemResponse connectionRef = (ConnectionsListItemResponse) response;
+                InterConnection connectionRef = (InterConnection) response;
                 if (connectionRef != null) {
-                    addConnectionToMyList(connectionRef);
+                    /*
+                     * now creating an interconnection for the user*/
+                    createMyInterconnection(connectionRef);
                 }
                 break;
             }
 
-            case FirebaseConstants.ADD_REF_TO_MY_CONNECTIONS_LIST_CALL: {
-                String newConnectionId = (String) response;
-                if (newConnectionId != null) {
-                    addConnectionToOthersList(newConnectionId);
+            case FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL: {
+                myInterconnection = ((InterConnection) response);
+                if (myInterconnection != null) {
+                    createReceiversInterconnection(myInterconnection.getConnectionId());
                 } else {
                     onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR);
                 }
                 break;
             }
 
-            case FirebaseConstants.ADD_REF_TO_OTHERS_CONNECTIONS_LIST_CALL: {
-                String newConnectionId = (String) response;
-                if (newConnectionId != null) {
-                    startChatWithIndividualActivity(newConnectionId, true);
-                } else {
-                    onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR);
-                }
+            case FirebaseConstants.CREATE_RECEIVERS_INTERCONNECTION_CALL: {
+                receiversInterconnection = (InterConnection) response;
+                startChatWithIndividualActivity();
                 break;
             }
         }
+
     }
 
     @Override
@@ -313,25 +310,25 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
                 break;
             }
 
-            case FirebaseConstants.ADD_REF_TO_MY_CONNECTIONS_LIST_CALL: {
+            case FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL: {
                 if (response != null) {
                     String connectionId = (String) response;
                     if (!Helper.isNill(connectionId)) {
                         deleteConnection(connectionId);
-                        deleteConnectionsReferenceFromList(myConnectionsListRef, ssUsersListAdapter.selectedUser.getUserId());
+                        deleteConnectionsReferenceFromList(myInterconnectionsDocId, ssUsersListAdapter.selectedUser.getUserId());
                     }
                 }
                 onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR);
                 break;
             }
 
-            case FirebaseConstants.ADD_REF_TO_OTHERS_CONNECTIONS_LIST_CALL: {
+            case FirebaseConstants.CREATE_RECEIVERS_INTERCONNECTION_CALL: {
                 if (response != null) {
                     String connectionId = (String) response;
                     if (!Helper.isNill(connectionId)) {
                         deleteConnection(connectionId);
-                        deleteConnectionsReferenceFromList(myConnectionsListRef, ssUsersListAdapter.selectedUser.getUserId());
-                        deleteConnectionsReferenceFromList(ssUsersListAdapter.selectedUser.getMyConnectionsListRef(), myUserId);
+                        deleteConnectionsReferenceFromList(myInterconnectionsDocId, ssUsersListAdapter.selectedUser.getUserId());
+                        deleteConnectionsReferenceFromList(ssUsersListAdapter.selectedUser.getMyInterconnectionsDocId(), myUserId);
                     }
                 }
                 onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR);

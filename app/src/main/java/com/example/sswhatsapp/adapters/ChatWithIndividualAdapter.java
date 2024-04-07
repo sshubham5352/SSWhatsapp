@@ -25,7 +25,7 @@ import java.util.List;
 public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
     //Field Declaration
     static final int NULL_LAYOUT = -1;
-    static int SPACE_BETWEEN_CHATS = 24;
+    static int SPACE_BETWEEN_CHATS = 30;
     Context mContext;
     ChatWithIndividualAdapterListener mListener;
     LayoutInflater inflater;

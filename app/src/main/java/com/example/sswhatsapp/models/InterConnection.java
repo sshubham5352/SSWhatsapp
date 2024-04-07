@@ -6,9 +6,11 @@ import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.QuerySnapshot;
 
-public class ConnectionsListItemResponse {
+import java.io.Serializable;
+
+public class InterConnection implements Serializable {
     //fields
-    @PropertyName(FirebaseConstants.KEY_CONNECTIONS_REF)
+    @PropertyName(FirebaseConstants.KEY_CONNECTION_ID)
     public String connectionId;
     @PropertyName(FirebaseConstants.KEY_CONNECTION_WITH)
     public String connectionWith;
@@ -16,23 +18,19 @@ public class ConnectionsListItemResponse {
     public boolean isEradicated;
 
 
-    public ConnectionsListItemResponse() {
+    //CONSTRUCTOR
+    public InterConnection() {
         /*
          * Empty Constructor
          * required for firestore to convert document to pojo java class
          */
     }
 
-    public ConnectionsListItemResponse(String connectionId, String connectionWith, boolean isEradicated) {
+    //CONSTRUCTOR
+    public InterConnection(String connectionId, String connectionWith, boolean isEradicated) {
         this.connectionId = connectionId;
         this.connectionWith = connectionWith;
         this.isEradicated = isEradicated;
-    }
-
-    public ConnectionsListItemResponse(String connectionId, String connectionWith) {
-        this.connectionId = connectionId;
-        this.connectionWith = connectionWith;
-        this.isEradicated = true;
     }
 
     public String getConnectionId() {
@@ -45,6 +43,10 @@ public class ConnectionsListItemResponse {
 
     public boolean isEradicated() {
         return isEradicated;
+    }
+
+    public void setEradicated(boolean eradicated) {
+        isEradicated = eradicated;
     }
 
     @NonNull

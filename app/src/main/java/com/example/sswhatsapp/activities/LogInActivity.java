@@ -22,7 +22,6 @@ import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
 import com.example.sswhatsapp.models.UserDetailsResponse;
 import com.example.sswhatsapp.utils.Helper;
 import com.example.sswhatsapp.utils.SessionManager;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 public class LogInActivity extends AppCompatActivity implements View.OnClickListener, FirestoreNetworkCallListener {
@@ -30,7 +29,9 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     //fields
     private ActivityLogInBinding binding;
     private FirestoreManager firestoreManager;
+    private UserDetailsResponse userDetailsResponse;
     private InputMethodManager imm;
+    private String fcmToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,10 +119,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
             if (areLoginFieldsValid()) {
                 imm.hideSoftInputFromWindow(binding.rootLayout.getWindowToken(), 0); // closing soft keyboard
                 binding.rootLayout.scrollTo(0, 0);
-                if (binding.mobileNumber.getText().length() != 0)
-                    searchUserByMobileNumber();
-                else
-                    searchUserByEmailId();
+                getFCMToken();
             }
         }
     }
@@ -162,6 +160,10 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         return binding.password.getText().toString().trim().matches(correctPassword);
     }
 
+    //NETWORK CALL
+    private void getFCMToken() {
+        firestoreManager.getFCMToken();
+    }
 
     //NETWORK CALL
     private void searchUserByMobileNumber() {
@@ -174,13 +176,17 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     }
 
     //NETWORK CALL
-    private void loginUser(UserDetailsResponse userDetailsResponse) {
-        SessionManager.createUserSession(userDetailsResponse);
-        Toast.makeText(this, "Welcome Back " + SessionManager.getUserFirstName(), Toast.LENGTH_LONG).show();
-        startMainActivity();
+    private void updateFcmToken() {
+        firestoreManager.updateFcmTokenField(userDetailsResponse.getUserId(), fcmToken);
     }
 
+    private void createUserSession() {
+        SessionManager.createUserSession(userDetailsResponse);
+    }
+
+    //STATING ACTIVITY
     public void startMainActivity() {
+        Toast.makeText(this, "Welcome Back " + SessionManager.getUserFirstName(), Toast.LENGTH_LONG).show();
         Intent intent = new Intent(this, HomeActivity.class);
         startActivity(intent);
         finishAffinity();
@@ -190,35 +196,55 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
     @Override
     public void onFirestoreNetworkCallSuccess(Object response, int serviceCode) {
         switch (serviceCode) {
-            case FirebaseConstants.GET_USER_BY_MOBILE_NO_CALL:
+            case FirebaseConstants.GET_FCM_TOKEN_CALL: {
+                fcmToken = (String) response;
+
+                if (binding.mobileNumber.getText().length() != 0)
+                    searchUserByMobileNumber();
+                else
+                    searchUserByEmailId();
+                break;
+            }
+            case FirebaseConstants.GET_USER_BY_MOBILE_NO_CALL: {
                 QuerySnapshot snapshot = (QuerySnapshot) response;
                 if (snapshot.getDocuments().size() == 0) {
                     Toast.makeText(this, "Mobile no does not exist.\n if new user please sign up", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String correctPassword = (String) snapshot.getDocuments().get(0).get(FirebaseConstants.KEY_USER_PASSWORD);
+                if (isPasswordCorrect(correctPassword)) {
+                    userDetailsResponse = snapshot.getDocuments().get(0).toObject(UserDetailsResponse.class);
+                    updateFcmToken();
                 } else {
-                    String correctPassword = (String) snapshot.getDocuments().get(0).get(FirebaseConstants.KEY_USER_PASSWORD);
-                    if (isPasswordCorrect(correctPassword)) {
-                        DocumentSnapshot doc = snapshot.getDocuments().get(0);
-                        loginUser(doc.toObject(UserDetailsResponse.class));
-                    } else {
-                        Toast.makeText(this, "Incorrect password", Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(this, "Incorrect password", Toast.LENGTH_LONG).show();
                 }
                 break;
+            }
 
-            case FirebaseConstants.GET_USER_BY_EMAIL_ID_CALL:
-                snapshot = (QuerySnapshot) response;
+            case FirebaseConstants.GET_USER_BY_EMAIL_ID_CALL: {
+                QuerySnapshot snapshot = (QuerySnapshot) response;
                 if (snapshot.getDocuments().size() == 0) {
                     Toast.makeText(this, "Email id does not exist.\n if new user please sign up", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                String correctPassword = (String) snapshot.getDocuments().get(0).get(FirebaseConstants.KEY_USER_PASSWORD);
+                if (isPasswordCorrect(correctPassword)) {
+                    userDetailsResponse = snapshot.getDocuments().get(0).toObject(UserDetailsResponse.class);
+                    updateFcmToken();
                 } else {
-                    String correctPassword = (String) snapshot.getDocuments().get(0).get(FirebaseConstants.KEY_USER_PASSWORD);
-                    if (isPasswordCorrect(correctPassword)) {
-                        DocumentSnapshot doc = snapshot.getDocuments().get(0);
-                        loginUser(doc.toObject(UserDetailsResponse.class));
-                    } else {
-                        Toast.makeText(this, "Incorrect password", Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(this, "Incorrect password", Toast.LENGTH_LONG).show();
                 }
                 break;
+            }
+
+            case FirebaseConstants.UPDATE_FIELD_FCM_TOKEN: {
+                userDetailsResponse.setFcmToken(fcmToken);
+                createUserSession();
+                startMainActivity();
+                break;
+            }
         }
     }
 
@@ -229,6 +255,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
 
     @Override
     public void onFirestoreNetworkCallFailure(String errorMessage) {
+        userDetailsResponse = null;
         Log.d(FirebaseConstants.NETWORK_CALL, errorMessage);
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
     }

@@ -17,9 +17,8 @@ public class Constants {
     public static final String INTENT_TYPE_IMAGE = "image/*";
     public static final int INTENT_CODE_REQUEST_IMG = 101;
     public static final String INTENT_USER_DETAILS_EXTRA = "201";
-    public static final String INTENT_CONNECTION_ID_EXTRA = "202";
-    public static final String INTENT_IS_NEW_CONNECTION_EXTRA = "203";
-    public static final String INTENT_IS_ERADICATED = "204";
+    public static final String INTENT_MY_INTERCONNECTION_EXTRA = "202";
+    public static final String INTENT_RECEIVERS_INTERCONNECTION_EXTRA = "203";
 
 
     //------------------------ RecyclerView CONSTANTS ------------------------//

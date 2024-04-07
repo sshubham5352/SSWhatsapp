@@ -89,7 +89,8 @@
 
     <!--    View Size (sp)    -->
     <dimen name="size_max_chat_edittext">180dp</dimen>
-    <dimen name="size_chat_item_tail">6dp</dimen>
+    <dimen name="size_chat_tail_width">6dp</dimen>
+    <dimen name="size_chat_tail_height">30dp</dimen>
 
     <!--    Icon Size (sp)    -->
     <dimen name="size_standard_app_icon">36dp</dimen>

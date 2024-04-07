@@ -24,7 +24,7 @@ public class Helper {
 
 
     public static boolean isNill(String s) {
-        return (s == null || s.length() != 0);
+        return (s == null || s.length() == 0);
     }
 
     public static boolean isFieldEmpty(EditText field) {

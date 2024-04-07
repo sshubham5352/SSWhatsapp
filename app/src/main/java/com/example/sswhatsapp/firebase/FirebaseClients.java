@@ -3,11 +3,11 @@ package com.example.sswhatsapp.firebase;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 
-public class FirestoreClient {
+public class FirebaseClients {
     public static FirebaseFirestore firestoreDb;
     public static FirebaseStorage firebaseStorage;
 
-    private FirestoreClient() {
+    private FirebaseClients() {
         //private empty constructor for singleton approach
     }
 
@@ -25,7 +25,7 @@ public class FirestoreClient {
         return firebaseStorage;
     }
 
-    public static void destroyAllRetrofitClients() {
+    public static void destroyAllFirebaseClients() {
         firestoreDb = null;
         firebaseStorage = null;
     }
