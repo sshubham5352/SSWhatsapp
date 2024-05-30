@@ -39,7 +39,8 @@
     <string name="img_camera_icon">img_camera_icon</string>
     <string name="_10_30am">10:30am</string>
     <string name="you_hi_how_are_you">You: Hi How are you?</string>
-
+    <string name="status_online">Online</string>
+    <string name="status_typing">Typing…</string>
     <!--  Arrays  -->
     <string-array name="genders">
         <item>male</item>

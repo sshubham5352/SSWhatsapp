@@ -22,6 +22,10 @@ public class TimeHandler {
         return new Date();
     }
 
+    public static Long getCurrentTime() {
+        return new Date().getTime();
+    }
+
     public static String getCurrentTimeStamp() {
         //returns current time stamp in standard format
         return standardTimeStampFormat.format(new Date());

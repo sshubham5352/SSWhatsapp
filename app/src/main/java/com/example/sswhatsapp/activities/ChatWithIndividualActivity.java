@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -21,20 +21,21 @@ import com.example.sswhatsapp.listeners.ChatWithIndividualAdapterListener;
 import com.example.sswhatsapp.models.ChatItemResponse;
 import com.example.sswhatsapp.models.InterConnection;
 import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.services.FCMService;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
 import com.example.sswhatsapp.utils.PicassoCache;
 import com.example.sswhatsapp.utils.SessionManager;
+import com.example.sswhatsapp.utils.SoundManager;
 
 import java.util.List;
 
-public class ChatWithIndividualActivity extends AppCompatActivity implements View.OnClickListener, ChatWithIndividualAdapterListener, ChatWIthIndividualDaoListener {
+public class ChatWithIndividualActivity extends BaseActivity implements View.OnClickListener, ChatWithIndividualAdapterListener, ChatWIthIndividualDaoListener {
     //fields
     private ActivityChatWithIndividualBinding binding;
     ChatWithIndividualDao chatDao;
     private ChatWithIndividualAdapter chatsAdapter;
     private List<ChatItemResponse> chatsList;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,18 +58,42 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
         // setting onEditorAction
         setMessageTextChangeListener();
         setRvLayoutChangeListener();
+
+        //onBackPressed
+        getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                onActivityBackPressed();
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        chatDao.attachChatReceiverListener();
+
+        chatDao.updateMyLiveOnChatStatus(true);
+        chatDao.attachReceiverDocListener();
+        chatDao.attachChatParticipantListener();
+        chatDao.attachChatsCollectionListener();
+        FCMService.clearNotification(chatDao.getReceiverUser().getUserId());
+        chatDao.updateAllChatsStatusAsRead();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        chatDao.detachChatReceiverListener();
+        chatDao.updateMyLiveOnChatStatus(false);
+        chatDao.detachChatParticipantListener();
+        chatDao.detachChatsCollectionListener();
+    }
+
+    void onActivityBackPressed() {
+        if (isTaskRoot()) {
+            Intent intent = new Intent(this, HomeActivity.class);
+            startActivity(intent);
+        }
+        finish();
     }
 
     private void initDao() {
@@ -77,19 +102,32 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
         InterConnection myInterconnection = (InterConnection) intent.getSerializableExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA);
         InterConnection receiversInterconnection = (InterConnection) intent.getSerializableExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA);
 
-        UserDetailsResponse senderUserDetails = SessionManager.getUser();
+        if (!SessionManager.isInitiated()) {
+            SessionManager.initSessionManager(getApplicationContext());
+        }
 
-        chatDao = new ChatWithIndividualDao(this, this,
-                senderUserDetails, receiverUserDetails, myInterconnection, receiversInterconnection);
+        if (!SoundManager.isInitiated()) {
+            SoundManager.initSoundManager(getApplicationContext());
+        }
+        UserDetailsResponse senderUserDetails = SessionManager.getUser();
+        chatDao = new ChatWithIndividualDao(this, this, senderUserDetails, receiverUserDetails, myInterconnection, receiversInterconnection);
     }
 
     private void initToolbar() {
         UserDetailsResponse connectionWithUser = chatDao.getReceiverUser();
         binding.toolbar.setNavigationOnClickListener(view -> finish());
-        PicassoCache.getPicassoInstance(this).load(connectionWithUser.getProfileImgUrl()).
-                placeholder(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()))
-                .into(binding.imgUserProfile);
+        if (connectionWithUser.getProfileImgUrl() != null) {
+            PicassoCache.getPicassoInstance(this).load(connectionWithUser.getProfileImgUrl()).
+                    placeholder(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()))
+                    .into(binding.imgUserProfile);
+        } else {
+            binding.imgUserProfile.setImageResource(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()));
+        }
         binding.userName.setText(connectionWithUser.getName());
+
+        if (chatDao.getReceiverUser().isOnline()) {
+            receiverOnlineStatusUpdated(true);
+        }
     }
 
     private void initChatAdapter() {
@@ -111,9 +149,11 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 if (charSequence.length() == 0) {
                     // field got empty
+                    chatDao.updateMyTypingStatus(false);
                     startAnimOnStopTyping();
                 } else {
                     // user is writing something
+                    chatDao.updateMyTypingStatus(true);
                     startAnimOnStartTyping();
                 }
             }
@@ -202,10 +242,10 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
         chatsAdapter.notifyItemRangeInserted(startPosition, chatCount);
     }
 
-
     @Override
     public void chatSentSuccess(int position) {
         chatsAdapter.notifyItemChanged(position);
+        SoundManager.playChatSentSound();
     }
 
     @Override
@@ -216,5 +256,29 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     @Override
     public void chatReceivedSuccess(int position) {
         chatsAdapter.notifyItemInserted(position);
+        SoundManager.playChatReceivedSound();
+    }
+
+    @Override
+    public void chatStatusUpdated(int position) {
+        chatsAdapter.notifyItemChanged(position);
+    }
+
+    @Override
+    public void receiverTypingStatusUpdated(boolean isTyping) {
+        if (isTyping) {
+            binding.userAvailabilityStatus.setText(getString(R.string.status_typing));
+        } else {
+            binding.userAvailabilityStatus.setText(getString(R.string.status_online));
+        }
+    }
+
+    @Override
+    public void receiverOnlineStatusUpdated(boolean isOnline) {
+        if (isOnline) {
+            binding.userAvailabilityStatus.setVisibility(View.VISIBLE);
+        } else {
+            binding.userAvailabilityStatus.setVisibility(View.GONE);
+        }
     }
 }

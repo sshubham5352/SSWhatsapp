@@ -14,9 +14,14 @@ public class RetrofitConstants {
     public static final String FCM_SERVER_KEY = "AAAAnK60754:APA91bEhK797jXC7M-s5h-nWJTmb6F51LsHOkA2syHtwR31ldsitFOKABqpEdqKu7XOK_owICeIxQJZAG1ycCOdstOJWwHnTtz24s4sk4-vY02yMEGAbbKrHWER20iKi1gjjq5szDM3J";
 
 
+    //------------------------ NOTIFICATION CONSTANTS ------------------------//
+    public static final String NOTIFICATION_TYPE = "notification_type";
+
+
     //------------------------ RETROFIT CONSTANTS ------------------------//
 
     //--------- DATA ITEM CODES ---------//
+
 
     //--------- NETWORK CALLS ---------//
     public static final String NETWORK_CALL = "Retrofit_Network_Call";

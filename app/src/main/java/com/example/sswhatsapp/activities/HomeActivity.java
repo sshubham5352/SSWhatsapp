@@ -4,17 +4,15 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
 import com.example.sswhatsapp.R;
 import com.example.sswhatsapp.databinding.ActivityHomeBinding;
-import com.example.sswhatsapp.firebase.FirestoreManager;
+import com.example.sswhatsapp.services.FCMService;
 
-public class HomeActivity extends AppCompatActivity implements View.OnClickListener {
+public class HomeActivity extends BaseActivity implements View.OnClickListener {
     //fields
     private ActivityHomeBinding binding;
-    private FirestoreManager firestoreManager;
 
 
     @Override
@@ -24,6 +22,12 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
 
         //setting onClickListener
         binding.fabAllChats.setOnClickListener(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        FCMService.clearAllNotifications();
     }
 
     @Override

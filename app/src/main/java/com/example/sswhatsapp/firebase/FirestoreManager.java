@@ -7,6 +7,7 @@ import android.net.Uri;
 import com.example.sswhatsapp.models.ChatItemResponse;
 import com.example.sswhatsapp.models.InterConnection;
 import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.notificatons.ChatNotificationsManager;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.FirestoreHelper;
 import com.example.sswhatsapp.utils.Helper;
@@ -26,6 +27,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class FirestoreManager {
@@ -65,6 +67,26 @@ public class FirestoreManager {
                         .document(connectionId)
                         .collection(FirebaseConstants.COLLECTION_CHATS)
                         .whereGreaterThan(FirebaseConstants.KEY_TIME_STAMP, lastReceivedChatTimeStamp)
+                        .addSnapshotListener(listener);
+        return listenerRegistration;
+    }
+
+    //SETTING LISTENER
+    public ListenerRegistration setConnectionParticipantListener(String connectionId, String participantId, EventListener<QuerySnapshot> listener) {
+        ListenerRegistration listenerRegistration =
+                firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                        .document(connectionId)
+                        .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
+                        .whereEqualTo(FirebaseConstants.KEY_USER_ID, participantId)
+                        .addSnapshotListener(listener);
+        return listenerRegistration;
+    }
+
+    //SETTING LISTENER
+    public ListenerRegistration setUserDocListener(String userId, EventListener<DocumentSnapshot> listener) {
+        ListenerRegistration listenerRegistration =
+                firestoreDb.collection(FirebaseConstants.COLLECTION_USERS)
+                        .document(userId)
                         .addSnapshotListener(listener);
         return listenerRegistration;
     }
@@ -137,7 +159,7 @@ public class FirestoreManager {
                 .update(FirebaseConstants.KEY_FCM_TOKEN, fcmToken)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(fcmToken, FirebaseConstants.UPDATE_FIELD_FCM_TOKEN);
+                        mListener.onFirestoreNetworkCallSuccess(fcmToken, FirebaseConstants.UPDATE_FIELD_FCM_TOKEN_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                     }
@@ -364,12 +386,16 @@ public class FirestoreManager {
 
 
         HashMap<String, Object> participant1Data = new HashMap<>();
+        participant1Data.put(FirebaseConstants.KEY_DOC_ID, participant1.getId());
         participant1Data.put(FirebaseConstants.KEY_USER_ID, myUserId);
         participant1Data.put(FirebaseConstants.KEY_IS_TYPING, false);
+        participant1Data.put(FirebaseConstants.KEY_IS_LIVE, false);
 
         HashMap<String, Object> participant2Data = new HashMap<>();
+        participant2Data.put(FirebaseConstants.KEY_DOC_ID, participant2.getId());
         participant2Data.put(FirebaseConstants.KEY_USER_ID, connectionWith);
         participant2Data.put(FirebaseConstants.KEY_IS_TYPING, false);
+        participant2Data.put(FirebaseConstants.KEY_IS_LIVE, false);
 
 
         queriesBatch.set(participant1, participant1Data);
@@ -655,5 +681,104 @@ public class FirestoreManager {
                 {
                     mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                 });
+    }
+
+    public void updateChatStatus(int newChatStatus, String chatId, String connectionId) {
+        firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_CHATS)
+                .document(chatId)
+                .update(FirebaseConstants.KEY_CHAT_STATUS, newChatStatus);
+    }
+
+    public void updateChatsStatus(int newChatStatus, ArrayList<String> chatIdsList, String connectionId, String senderId) {
+        WriteBatch queriesBatch = firestoreDb.batch();
+
+        for (String chatId : chatIdsList) {
+            DocumentReference chatDoc = firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                    .document(connectionId)
+                    .collection(FirebaseConstants.COLLECTION_CHATS)
+                    .document(chatId);
+
+            queriesBatch.update(chatDoc, FirebaseConstants.KEY_CHAT_STATUS, newChatStatus);
+        }
+
+        // Commit the batch
+        queriesBatch.commit()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        mListener.onFirestoreNetworkCallSuccess(senderId, FirebaseConstants.UPDATE_CHATS_STATUS_CALL);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(connectionId, FirebaseConstants.UPDATE_CHATS_STATUS_CALL);
+                    }
+                })
+                .addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(connectionId, FirebaseConstants.UPDATE_CHATS_STATUS_CALL));
+    }
+
+    public void updateAllChatsStatusAsRead(String receiverId, String connectionId) {
+        firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_CHATS)
+                .whereEqualTo(FirebaseConstants.KEY_RECEIVER_ID, receiverId)
+                .whereNotEqualTo(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_READ)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (DocumentSnapshot doc : task.getResult().getDocuments()) {
+                            firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                                    .document(connectionId)
+                                    .collection(FirebaseConstants.COLLECTION_CHATS)
+                                    .document(doc.getId())
+                                    .update(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_READ);
+                        }
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                });
+    }
+
+    public void updateParticipantTypingStatus(boolean isTyping, String docId, String connectionId) {
+        firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
+                .document(docId)
+                .update(FirebaseConstants.KEY_IS_TYPING, isTyping);
+    }
+
+    public void updateMyOnlineStatus(boolean isOnline, String userId) {
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USERS)
+                .document(userId)
+                .update(FirebaseConstants.KEY_IS_ONLINE, isOnline);
+    }
+
+    public void updateMyLiveOnChatStatus(boolean isLive, String participantId, String connectionId) {
+        firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
+                .document(participantId)
+                .update(FirebaseConstants.KEY_IS_LIVE, isLive);
+    }
+
+    public void isParticipantLiveOnChat(String participantId, String connectionId, ChatNotificationsManager.NotificationRequirements notificationRequirementsObject) {
+        firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
+                .document(participantId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        boolean isLive = task.getResult().getBoolean(FirebaseConstants.KEY_IS_LIVE);
+                        notificationRequirementsObject.setParticipantLive(isLive);
+                        mListener.onFirestoreNetworkCallSuccess(notificationRequirementsObject, FirebaseConstants.IS_PARTICIPANT_LIVE_ON_CHAT_CALL);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                });
+
+
     }
 }

@@ -126,7 +126,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
             binding.emailId.setError(null);
 
         if (!Helper.isMobileNoValid(binding.mobileNumber.getText().toString())) {
-            binding.mobileNumber.setError("Please enter a valid mobile no");
+            binding.mobileNumber.setError("Please enter a valid mobile no (without country code)");
             return false;
         } else
             binding.mobileNumber.setError(null);

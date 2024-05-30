@@ -26,6 +26,7 @@ public class SessionManager {
     private static final String KEY_PROFILE_IMG_URL = "08";
     private static final String KEY_MY_INTERCONNECTIONS_DOC_ID = "09";
     private static final String KEY_FCM_TOKEN = "10";
+    private static final String KEY_CREATED_ON = "11";
 
     // Constructor
     private SessionManager() {
@@ -33,28 +34,35 @@ public class SessionManager {
     }
 
     public static void initSessionManager(Context context) {
-        sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        editor = sharedPreferences.edit();
-        editor.apply();
+        if (sharedPreferences == null) {
+            sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+            editor = sharedPreferences.edit();
+            editor.apply();
+        }
     }
 
-    public static void createUserSession(UserDetailsResponse userDetailsResponse) {
-        String[] userNameSubParts = userDetailsResponse.getName().split(" ");
+    public static boolean isInitiated() {
+        return (sharedPreferences != null);
+    }
+
+    public static void createUserSession(UserDetailsResponse user) {
+        String[] userNameSubParts = user.getName().split(" ");
         String firstName = userNameSubParts[0];
         String lastName = null;
         if (userNameSubParts.length > 1)
             lastName = userNameSubParts[userNameSubParts.length - 1];
 
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
-        editor.putString(KEY_USER_ID, userDetailsResponse.getUserId());
-        editor.putString(KEY_FCM_TOKEN, userDetailsResponse.getFcmToken());
+        editor.putString(KEY_CREATED_ON, user.getCreatedOn());
+        editor.putString(KEY_USER_ID, user.getUserId());
+        editor.putString(KEY_FCM_TOKEN, user.getFcmToken());
         editor.putString(KEY_USER_FIRST_NAME, firstName);
         editor.putString(KEY_USER_LAST_NAME, lastName);
-        editor.putString(KEY_GENDER, userDetailsResponse.getGender());
-        editor.putString(KEY_USER_EMAIL, userDetailsResponse.getEmailId());
-        editor.putString(KEY_USER_MOBILE_NO, userDetailsResponse.getMobileNo());
-        editor.putString(KEY_PROFILE_IMG_URL, userDetailsResponse.getProfileImgUrl());
-        editor.putString(KEY_MY_INTERCONNECTIONS_DOC_ID, userDetailsResponse.getMyInterconnectionsDocId());
+        editor.putString(KEY_GENDER, user.getGender());
+        editor.putString(KEY_USER_EMAIL, user.getEmailId());
+        editor.putString(KEY_USER_MOBILE_NO, user.getMobileNo());
+        editor.putString(KEY_PROFILE_IMG_URL, user.getProfileImgUrl());
+        editor.putString(KEY_MY_INTERCONNECTIONS_DOC_ID, user.getMyInterconnectionsDocId());
         // commit changes
         editor.apply();
     }
@@ -64,15 +72,18 @@ public class SessionManager {
     }
 
     public static UserDetailsResponse getUser() {
-        String id = getUserId();
+        String userId = getUserId();
         String fcmToken = getFcmToken();
         String name = getUserName();
+        String gender = getGender();
         String mobileNo = getUserMobileNo();
-        String email = getUserEmail();
+        String emailId = getUserEmail();
+        String createdOn = getCreatedOn();
         String profileImgUrl = getProfileImgUrl();
-        String connectionsListRef = getMyInterconnectionsDocId();
+        String myInterconnectionsDocId = getMyInterconnectionsDocId();
 
-        return new UserDetailsResponse(id, fcmToken, name, mobileNo, email, profileImgUrl, connectionsListRef);
+        return new UserDetailsResponse(userId, fcmToken, name, gender, emailId,
+                mobileNo, createdOn, profileImgUrl, myInterconnectionsDocId);
     }
 
     public static String getUserId() {
@@ -112,8 +123,12 @@ public class SessionManager {
         return sharedPreferences.getString(KEY_MY_INTERCONNECTIONS_DOC_ID, null);
     }
 
-    public static String getGenderName() {
+    public static String getGender() {
         return sharedPreferences.getString(KEY_GENDER, null);
+    }
+
+    public static String getCreatedOn() {
+        return sharedPreferences.getString(KEY_CREATED_ON, null);
     }
 
     public static String getProfileImgUrl() {

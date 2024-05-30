@@ -13,4 +13,10 @@ public interface ChatWIthIndividualDaoListener {
     void chatSentFailure(int position);
 
     void chatReceivedSuccess(int position);
+
+    void chatStatusUpdated(int position);
+
+    void receiverTypingStatusUpdated(boolean isTyping);
+
+    void receiverOnlineStatusUpdated(boolean isOnline);
 }

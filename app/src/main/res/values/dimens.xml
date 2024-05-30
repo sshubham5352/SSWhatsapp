@@ -98,7 +98,7 @@
 
     <dimen name="size_chat_icon">48dp</dimen>
     <dimen name="size_chat_icon_small">22dp</dimen>
-    <dimen name="size_chat_tick_icon">14dp</dimen>
+    <dimen name="size_chat_tick_icon">16dp</dimen>
     <dimen name="size_chat_tick_icon_large">18dp</dimen>
     <dimen name="size_chat_like_icon">10dp</dimen>
 

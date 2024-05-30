@@ -36,6 +36,7 @@ public class FirebaseConstants {
     public static final String KEY_ACCOUNT_CREATED_ON = "account_created_on";
     public static final String KEY_USER_PROFILE_IMG_URL = "img_profile";
     public static final String KEY_CREATED_ON = "created_on";
+    public static final String KEY_IS_ONLINE = "is_online";
 
 
     //---- CHAT ITEM DETAILS ----//
@@ -58,7 +59,12 @@ public class FirebaseConstants {
     public static final String KEY_CONNECTIONS_WITH = "connection_with";
     public static final String KEY_CONNECTION_WITH = "connection_with";
     public static final String KEY_IS_ERADICATED = "is_eradicated";
+    public static final String KEY_IS_LIVE = "is_live";
     public static final String KEY_IS_TYPING = "is_typing";
+
+
+    //---- MISC KEYS ----//
+    public static final String KEY_DOC_ID = "doc_id";
 
 
     //--------- NETWORK CALLS ---------//
@@ -84,7 +90,9 @@ public class FirebaseConstants {
     public static final int UPDATE_MY_IS_ERADICATED_FIELD_CALL = 214;
     public static final int UPDATE_RECEIVERS_IS_ERADICATED_FIELD_CALL = 215;
     public static final int GET_FCM_TOKEN_CALL = 216;
-    public static final int UPDATE_FIELD_FCM_TOKEN = 217;
+    public static final int UPDATE_FIELD_FCM_TOKEN_CALL = 217;
+    public static final int UPDATE_CHATS_STATUS_CALL = 218;
+    public static final int IS_PARTICIPANT_LIVE_ON_CHAT_CALL = 219;
 
 
     //---- ERROR MESSAGES ----//

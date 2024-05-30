@@ -19,6 +19,7 @@ public class Constants {
     public static final String INTENT_USER_DETAILS_EXTRA = "201";
     public static final String INTENT_MY_INTERCONNECTION_EXTRA = "202";
     public static final String INTENT_RECEIVERS_INTERCONNECTION_EXTRA = "203";
+    public static final String ARRIVED_FROM_NOTIFICATION_EXTRA = "204";
 
 
     //------------------------ RecyclerView CONSTANTS ------------------------//
@@ -48,4 +49,17 @@ public class Constants {
     public static final int LAYOUT_TYPE_BANNER_DATE = 100;
     public static final int LAYOUT_TYPE_CHAT_MSG_SENT = 101;
     public static final int LAYOUT_TYPE_CHAT_MSG_RECEIVED = 102;
+
+
+    //------------------------ NOTIFICATION CONSTANTS ------------------------//
+    public static final String NOTIFICATIONS_TAG = "SS WHATSAPP";
+    public static final String NOTIFICATIONS_GROUP_KEY = "com.example.sswhatsapp";
+    public static final String CHAT_CHANNEL_ID = "chat_message";
+    public static final int GROUP_SUMMERY_ID = 201;
+    public static final String KEY_CHAT_REPLY = "chat_reply";
+
+    //------- ACTIONS -------//
+    public static final String NOTIFICATION_ACTION_ID = "notification_action";
+    public static final int NOTIFICATION_ACTION_REPLY = 501;
+    public static final int NOTIFICATION_ACTION_MARK_AS_READ = 502;
 }

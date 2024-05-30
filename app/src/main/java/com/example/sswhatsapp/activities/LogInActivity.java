@@ -135,7 +135,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
         }
 
         if (!Helper.isFieldEmpty(binding.mobileNumber) && !Helper.isMobileNoValid(binding.mobileNumber.getText().toString())) {
-            binding.mobileNumber.setError("Please enter a valid mobile no");
+            binding.mobileNumber.setError("Please enter a valid mobile no (without country code)");
             return false;
         } else
             binding.mobileNumber.setError(null);
@@ -239,7 +239,7 @@ public class LogInActivity extends AppCompatActivity implements View.OnClickList
                 break;
             }
 
-            case FirebaseConstants.UPDATE_FIELD_FCM_TOKEN: {
+            case FirebaseConstants.UPDATE_FIELD_FCM_TOKEN_CALL: {
                 userDetailsResponse.setFcmToken(fcmToken);
                 createUserSession();
                 startMainActivity();

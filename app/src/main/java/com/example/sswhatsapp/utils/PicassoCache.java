@@ -51,12 +51,12 @@ public class PicassoCache {
     }
 
     //util methods
-    public static Bitmap getBitmap(Context context, Resources resources, String imgUrl) {
+    public static Bitmap getBitmap(Context context, Resources resources, String imgUrl, int placeHolder) {
         try {
             return PicassoCache.getPicassoInstance(context).load(imgUrl).get();
         } catch (IOException e) {
             //
         }
-        return BitmapFactory.decodeResource(resources, R.drawable.img_user_placeholder);
+        return BitmapFactory.decodeResource(resources, placeHolder);
     }
 }

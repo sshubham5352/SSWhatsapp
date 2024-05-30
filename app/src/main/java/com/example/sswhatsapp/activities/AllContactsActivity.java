@@ -7,7 +7,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.NestedScrollView;
 import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -37,7 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class AllContactsActivity extends AppCompatActivity implements View.OnClickListener, FirestoreNetworkCallListener,
+public class AllContactsActivity extends BaseActivity implements View.OnClickListener, FirestoreNetworkCallListener,
         SSUsersListListener, NonSSUsersListListener, NestedScrollView.OnScrollChangeListener {
     //fields
     private ActivityAllContactsBinding binding;

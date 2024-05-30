@@ -90,6 +90,8 @@ public class ChatItemResponse {
     public ChatItemResponse(Map<String, String> dataMap) {
         chatId = dataMap.get(FirebaseConstants.KEY_CHAT_ID);
         chatCategory = Integer.parseInt(dataMap.get(FirebaseConstants.KEY_CHAT_CATEGORY));
+        senderId = dataMap.get(FirebaseConstants.KEY_SENDER_ID);
+        receiverId = dataMap.get(FirebaseConstants.KEY_RECEIVER_ID);
         message = dataMap.get(FirebaseConstants.KEY_CHAT_MESSAGE);
     }
 

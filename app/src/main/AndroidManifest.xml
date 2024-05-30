@@ -26,10 +26,10 @@
             android:theme="@style/ThemeSplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".activities.SignUpActivity"
             android:exported="false"
@@ -54,10 +54,10 @@
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
-
         <activity
             android:name=".activities.ChatWithIndividualActivity"
             android:exported="false"
+            android:parentActivityName=".activities.HomeActivity"
             android:screenOrientation="portrait"
             android:theme="@style/ThemeChatActivity"
             android:windowSoftInputMode="adjustResize" />
@@ -70,5 +70,13 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- BroadcastReceiver -->
+        <receiver
+            android:name=".broadcastreceivers.NotificationActionsBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+        </receiver>
     </application>
 </manifest>

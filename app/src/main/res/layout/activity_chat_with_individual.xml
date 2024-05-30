@@ -65,7 +65,7 @@
                         android:ellipsize="end"
                         android:fontFamily="@font/source_sans_pro_regular"
                         android:maxLines="1"
-                        android:text="@string/online"
+                        android:text="@string/status_online"
                         android:textColor="@color/colorBlack"
                         android:textSize="@dimen/size_toolbar_sub_title"
                         android:visibility="gone" />

@@ -49,6 +49,7 @@ public class InterConnection implements Serializable {
         isEradicated = eradicated;
     }
 
+
     @NonNull
     @Override
     public String toString() {

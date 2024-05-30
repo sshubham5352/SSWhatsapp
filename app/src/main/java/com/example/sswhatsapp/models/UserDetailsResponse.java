@@ -28,6 +28,8 @@ public class UserDetailsResponse implements Serializable {
     public String createdOn;
     @PropertyName(FirebaseConstants.KEY_MY_INTERCONNECTIONS_DOC_ID)
     public String myInterconnectionsDocId;
+    @PropertyName(FirebaseConstants.KEY_IS_ONLINE)
+    public boolean isOnline;
 
     //CONSTRUCTOR: for json conversion
     public UserDetailsResponse() {
@@ -37,7 +39,7 @@ public class UserDetailsResponse implements Serializable {
          */
     }
 
-    //CONSTRUCTOR: for new chat msg
+    //CONSTRUCTOR
     public UserDetailsResponse(String userId, String fcmToken, String name, String gender, String emailId, String mobileNo, String createdOn, String profileImgUrl) {
         this.userId = userId;
         this.fcmToken = fcmToken;
@@ -51,19 +53,26 @@ public class UserDetailsResponse implements Serializable {
     }
 
     //CONSTRUCTOR: for session manager
-    public UserDetailsResponse(String userId, String fcmToken, String name, String mobileNo, String emailId, String profileImgUrl, String myInterconnectionsDocId) {
+    public UserDetailsResponse(String userId, String fcmToken, String name,
+                               String gender, String emailId, String mobileNo,
+                               String createdOn, String profileImgUrl, String myInterconnectionsDocId) {
         this.userId = userId;
         this.fcmToken = fcmToken;
         this.name = name;
-        this.mobileNo = mobileNo;
+        this.gender = gender;
         this.emailId = emailId;
+        this.mobileNo = mobileNo;
+        this.createdOn = createdOn;
         this.profileImgUrl = profileImgUrl;
         this.myInterconnectionsDocId = myInterconnectionsDocId;
     }
 
     //CONSTRUCTOR: for FCM service
     public UserDetailsResponse(Map<String, String> dataMap) {
+        fcmToken = dataMap.get(FirebaseConstants.KEY_FCM_TOKEN);
         userId = dataMap.get(FirebaseConstants.KEY_USER_ID);
+        name = dataMap.get(FirebaseConstants.KEY_USER_NAME);
+        gender = dataMap.get(FirebaseConstants.KEY_USER_GENDER);
         mobileNo = dataMap.get(FirebaseConstants.KEY_USER_MOBILE_NO);
         profileImgUrl = dataMap.get(FirebaseConstants.KEY_USER_PROFILE_IMG_URL);
     }
@@ -132,6 +141,10 @@ public class UserDetailsResponse implements Serializable {
         this.profileImgUrl = profileImgUrl;
     }
 
+    public boolean isOnline() {
+        return isOnline;
+    }
+
     public void setTagline(String tagline) {
         this.tagline = tagline;
     }
@@ -146,5 +159,9 @@ public class UserDetailsResponse implements Serializable {
 
     public void setMyInterconnectionsDocId(String myInterconnectionsDocId) {
         this.myInterconnectionsDocId = myInterconnectionsDocId;
+    }
+
+    public void setOnline(boolean online) {
+        isOnline = online;
     }
 }

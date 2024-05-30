@@ -52,9 +52,14 @@ public class SSUsersListAdapter extends RecyclerView.Adapter<SSUsersListAdapter.
         UserDetailsResponse currentItem = usersList.get(position);
         setFadeInAnimation(holder.itemView);
 
-        PicassoCache.getPicassoInstance(mContext).load(currentItem.getProfileImgUrl()).
-                placeholder(Helper.getProfilePlaceholderImg(mContext, usersList.get(position).gender))
-                .into(holder.binding.imgUserProfile);
+        if (Helper.isNill(currentItem.getProfileImgUrl())) {
+            holder.binding.imgUserProfile.setImageResource(Helper.getProfilePlaceholderImg(mContext, currentItem.gender));
+        } else {
+            PicassoCache.getPicassoInstance(mContext).load(currentItem.getProfileImgUrl()).
+                    placeholder(Helper.getProfilePlaceholderImg(mContext, currentItem.gender))
+                    .into(holder.binding.imgUserProfile);
+        }
+
         Helper.setText(currentItem.getName(), holder.binding.name, true);
         Helper.setText(currentItem.getTagline(), holder.binding.tagline, true);
 
