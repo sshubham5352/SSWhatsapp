@@ -110,8 +110,9 @@
 
 
     <!--    Lottie Anim Size (dp)    -->
-    <dimen name="size_standard_lottie_anim">150sp</dimen>
-    <dimen name="size_app_logo_lottie_anim">140sp</dimen>
+    <dimen name="size_standard_lottie_anim">150dp</dimen>
+    <dimen name="size_app_logo_lottie_anim">140dp</dimen>
+    <dimen name="size_chat_loading_lottie_anim">40dp</dimen>
 
 
     <!--    Elevation (dp)    -->

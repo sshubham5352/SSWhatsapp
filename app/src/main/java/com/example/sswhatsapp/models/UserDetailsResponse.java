@@ -28,8 +28,6 @@ public class UserDetailsResponse implements Serializable {
     public String createdOn;
     @PropertyName(FirebaseConstants.KEY_MY_INTERCONNECTIONS_DOC_ID)
     public String myInterconnectionsDocId;
-    @PropertyName(FirebaseConstants.KEY_IS_ONLINE)
-    public boolean isOnline;
 
     //CONSTRUCTOR: for json conversion
     public UserDetailsResponse() {
@@ -141,10 +139,6 @@ public class UserDetailsResponse implements Serializable {
         this.profileImgUrl = profileImgUrl;
     }
 
-    public boolean isOnline() {
-        return isOnline;
-    }
-
     public void setTagline(String tagline) {
         this.tagline = tagline;
     }
@@ -159,9 +153,5 @@ public class UserDetailsResponse implements Serializable {
 
     public void setMyInterconnectionsDocId(String myInterconnectionsDocId) {
         this.myInterconnectionsDocId = myInterconnectionsDocId;
-    }
-
-    public void setOnline(boolean online) {
-        isOnline = online;
     }
 }

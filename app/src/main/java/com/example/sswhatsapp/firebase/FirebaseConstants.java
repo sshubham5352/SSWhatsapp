@@ -1,13 +1,26 @@
 package com.example.sswhatsapp.firebase;
 
 public class FirebaseConstants {
-    //------------------------ FirebaseFirestore ------------------------//
+    //------------------------ FIREBASE CONSTANTS ------------------------//
 
-
-    //--------- DATABASE FOLDERS ---------//
+    //--------- STORAGE FOLDERS ---------//
     public static final String USER_PROFILE_IMAGES_FOLDER = "User Profile Images/";
 
 
+    //--------- REALTIME CONSTANTS ---------//
+    //--------- ROOTS ---------//
+    public static final String ROOT_USERS = "Users";
+
+    //--------- LEAVES ---------//
+    public static final String KEY_IS_ONLINE = "is_online";
+    public static final String KEY_LAST_ONLINE = "last_online";
+
+    //---- FIRESTORE CALL CODES ----//
+    public static final int UPDATE_ONLINE_STATUS_CALL = 218;
+
+
+
+    //--------- FIRESTORE CONSTANTS ---------//
     //--------- COLLECTIONS ---------//
     public static final String COLLECTION_USERS = "Users";
     public static final String COLLECTION_USER_INTERCONNECTIONS = "User Interconnections";
@@ -36,7 +49,6 @@ public class FirebaseConstants {
     public static final String KEY_ACCOUNT_CREATED_ON = "account_created_on";
     public static final String KEY_USER_PROFILE_IMG_URL = "img_profile";
     public static final String KEY_CREATED_ON = "created_on";
-    public static final String KEY_IS_ONLINE = "is_online";
 
 
     //---- CHAT ITEM DETAILS ----//
@@ -73,7 +85,7 @@ public class FirebaseConstants {
     public static final String NETWORK_CALL_FAILURE = "onFirestoreNetworkCallFailure: ";
 
 
-    //---- CALL CODES ----//
+    //---- FIRESTORE CALL CODES ----//
     public static final int UPLOAD_USER_PROFILE_IMG_CALL = 201;
     public static final int SIGN_UP_USER_CALL = 202;
     public static final int GET_USER_BY_ID_CALL = 203;
@@ -86,7 +98,7 @@ public class FirebaseConstants {
     public static final int CREATE_RECEIVERS_INTERCONNECTION_CALL = 210;
     public static final int DELETE_CONNECTION_CALL = 211;
     public static final int SEND_MESSAGE_CHAT_CALL = 212;
-    public static final int FETCH_ALL_CHATS_CALL = 213;
+    public static final int FETCH_PREVIOUS_CHATS_CALL = 213;
     public static final int UPDATE_MY_IS_ERADICATED_FIELD_CALL = 214;
     public static final int UPDATE_RECEIVERS_IS_ERADICATED_FIELD_CALL = 215;
     public static final int GET_FCM_TOKEN_CALL = 216;

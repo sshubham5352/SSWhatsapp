@@ -1,7 +1,7 @@
 package com.example.sswhatsapp.adapters;
 
 import android.content.Context;
-import android.graphics.Rect;
+import android.graphics.Canvas;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,7 +40,6 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
         this.mChatsList = chatList;
         mUserId = userId;
         inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        loadedViewCount = -1;
     }
 
 
@@ -92,15 +91,11 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ChatItemResponse chatItem = mChatsList.get(position);
-        if (position > loadedViewCount) {
-            setFadeInAnimation(holder.itemView);
-            loadedViewCount++;
-        }
 
         switch (getItemViewType(position)) {
             case Constants.LAYOUT_TYPE_BANNER_DATE: {
                 BannerDateHolder bannerDateHolder = (BannerDateHolder) holder;
-                bannerDateHolder.binding.bannerDate.setText(chatItem.getTimeStamp());
+                bannerDateHolder.binding.bannerDate.setText(chatItem.getDateBannerTitle());
                 break;
             }
             case Constants.LAYOUT_TYPE_CHAT_MSG_SENT: {
@@ -118,6 +113,11 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
                 msgReceivedHolder.binding.message.setText(chatItem.getMessage());
                 break;
             }
+        }
+
+        //CALL FOR CONTROLLER
+        if (position == 0) {
+            mListener.fetchPreviousChats();
         }
     }
 
@@ -148,11 +148,15 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
         return mChatsList.size();
     }
 
+    @Override
+    public long getItemId(int position) {
+        return 0;
+    }
 
-    //VIEW HOLDERS
-    static class BannerDateHolder extends RecyclerView.ViewHolder {
+    //VIEW HOLDER CLASSES
+    public static class BannerDateHolder extends RecyclerView.ViewHolder {
         //Field declaration
-        ItemRvChatDateBannerBinding binding;
+        public ItemRvChatDateBannerBinding binding;
 
         public BannerDateHolder(@NonNull ItemRvChatDateBannerBinding binding) {
             super(binding.getRoot());
@@ -222,19 +226,154 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
         }
     }
 
-    public static class SpacingItemDecoration extends RecyclerView.ItemDecoration {
-        int topSpace;
+    //RV ITEM DECORATION CLASSES
+    public static class HeaderItemDecoration extends RecyclerView.ItemDecoration {
+        //FIELDS
+        private final Context mContext;
+        private final LayoutInflater layoutInflater;
+        private final BannerDateHolder currentHeader;
+        private final StickyHeaderInterface mListener;
+        private final Runnable dateHeaderHideoutRunnable;
+        private final int DATE_HEADER_HIDEOUT_MILLIS = 1000;
+        int lastItemIndex;
 
-        public SpacingItemDecoration(int topSpace) {
-            this.topSpace = topSpace;
+        //CONSTRUCTOR
+        public HeaderItemDecoration(Context context, RecyclerView rv, @NonNull StickyHeaderInterface listener) {
+            mContext = context;
+            mListener = listener;
+            layoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            currentHeader = getHeaderViewForItem(rv);
+            lastItemIndex = -1;
+
+
+            dateHeaderHideoutRunnable = () -> {
+                currentHeader.binding.bannerDate.setVisibility(View.GONE);
+                rv.invalidate();
+            };
+
+            addRvOnScrollListener(rv);
+        }
+
+        private void addRvOnScrollListener(RecyclerView rv) {
+            rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                    super.onScrollStateChanged(recyclerView, newState);
+
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        rv.postDelayed(dateHeaderHideoutRunnable, DATE_HEADER_HIDEOUT_MILLIS);
+                    } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                        rv.removeCallbacks(dateHeaderHideoutRunnable);
+                        currentHeader.binding.bannerDate.setVisibility(View.VISIBLE);
+                    }
+                }
+
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    super.onScrolled(recyclerView, dx, dy);
+                }
+            });
         }
 
         @Override
-        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-            super.getItemOffsets(outRect, view, parent, state);
-            if (parent.getChildAdapterPosition(view) != 0) {
-                outRect.top = topSpace;
+        public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            super.onDrawOver(c, parent, state);
+            View topChild = parent.getChildAt(0);
+            if (topChild == null) {
+                return;
             }
+
+            int topChildPosition = parent.getChildAdapterPosition(topChild);
+            if (topChildPosition == RecyclerView.NO_POSITION) {
+                return;
+            }
+
+            if (mListener.isHeader(topChildPosition)) {
+                mListener.bindHeaderData(currentHeader, topChildPosition);
+            } else {
+                mListener.bindHeaderData(currentHeader, mListener.getHeaderPositionForChatItem(topChildPosition));
+            }
+
+            fixLayoutSize(parent, currentHeader.binding.getRoot());
+            int contactPoint = currentHeader.binding.getRoot().getBottom();
+            View childInContact = getChildInContact(parent, contactPoint);
+            if (childInContact == null) {
+                return;
+            }
+
+            if (mListener.isHeader(parent.getChildAdapterPosition(childInContact))) {
+                pushCurrentWithNewHeader(c, currentHeader.binding.getRoot(), childInContact);
+                return;
+            }
+            drawHeader(c, currentHeader.binding.getRoot());
+        }
+
+        private BannerDateHolder getHeaderViewForItem(RecyclerView parent) {
+            ItemRvChatDateBannerBinding binding = ItemRvChatDateBannerBinding.inflate(layoutInflater, parent, false);
+            return new BannerDateHolder(binding);
+        }
+
+        private void drawHeader(Canvas c, View header) {
+            c.save();
+            c.translate(0, 0);
+            header.draw(c);
+            c.restore();
+        }
+
+        private void pushCurrentWithNewHeader(Canvas c, View currentHeader, View nextHeader) {
+            c.save();
+            c.translate(0, nextHeader.getTop() - currentHeader.getHeight());
+            currentHeader.draw(c);
+            c.restore();
+        }
+
+        private View getChildInContact(RecyclerView parent, int contactPoint) {
+            View childInContact = null;
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                View child = parent.getChildAt(i);
+                if (child.getBottom() > contactPoint) {
+                    if (child.getTop() <= contactPoint) {
+                        // This child overlaps the contactPoint
+                        childInContact = child;
+                        break;
+                    }
+                }
+            }
+            return childInContact;
+        }
+
+        /**
+         * Properly measures and layouts the top sticky header.
+         *
+         * @param parent ViewGroup: RecyclerView in this case.
+         */
+        private void fixLayoutSize(ViewGroup parent, View view) {
+            // Specs for parent (RecyclerView)
+            int widthSpec = View.MeasureSpec.makeMeasureSpec(parent.getWidth(), View.MeasureSpec.EXACTLY);
+            int heightSpec = View.MeasureSpec.makeMeasureSpec(parent.getHeight(), View.MeasureSpec.UNSPECIFIED);
+
+            // Specs for children (headers)
+            int childWidthSpec = ViewGroup.getChildMeasureSpec(widthSpec, 0, view.getLayoutParams().width);
+            int childHeightSpec = ViewGroup.getChildMeasureSpec(heightSpec, 0, view.getLayoutParams().height);
+
+            view.measure(childWidthSpec, childHeightSpec);
+
+            view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+        }
+
+        public interface StickyHeaderInterface {
+            boolean isHeader(int itemPosition);
+
+            /**
+             * This method gets called by {@link HeaderItemDecoration} to fetch the position of the header item in the adapter
+             * that is used for (represents) item at specified position.
+             *
+             * @param position int. Adapter's position of the item for which to do the search of the position of the header item.
+             * @return int. Position of the header item in the adapter.
+             */
+            int getHeaderPositionForChatItem(int position);
+
+            void bindHeaderData(ChatWithIndividualAdapter.BannerDateHolder bannerDateHolder, int headerPosition);
         }
     }
 }

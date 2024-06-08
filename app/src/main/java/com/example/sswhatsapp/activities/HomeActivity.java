@@ -4,13 +4,14 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
 import com.example.sswhatsapp.R;
 import com.example.sswhatsapp.databinding.ActivityHomeBinding;
 import com.example.sswhatsapp.services.FCMService;
 
-public class HomeActivity extends BaseActivity implements View.OnClickListener {
+public class HomeActivity extends AppCompatActivity implements View.OnClickListener {
     //fields
     private ActivityHomeBinding binding;
 

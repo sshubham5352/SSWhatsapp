@@ -30,6 +30,8 @@ public class ChatItemResponse {
     @PropertyName(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER)
     public boolean isDeletedByReceiver;
 
+    //non Firebase Properties
+    public String dateBannerTitle;
 
     //CONSTRUCTOR
     public ChatItemResponse() {
@@ -80,10 +82,11 @@ public class ChatItemResponse {
     }
 
     //CONSTRUCTOR: for date banner
-    public ChatItemResponse(int chatCategory, String timeStamp) {
+    public ChatItemResponse(int chatCategory, String timeStamp, String dateBannerTitle) {
         chatId = "";
         this.chatCategory = chatCategory;
         this.timeStamp = timeStamp;
+        this.dateBannerTitle = dateBannerTitle;
     }
 
     //CONSTRUCTOR: for FCM service
@@ -133,6 +136,10 @@ public class ChatItemResponse {
 
     public String getTimeStamp() {
         return timeStamp;
+    }
+
+    public String getDateBannerTitle() {
+        return dateBannerTitle;
     }
 
     public String getImgUrl() {

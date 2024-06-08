@@ -19,6 +19,8 @@ import com.example.sswhatsapp.databinding.ActivitySignUpBinding;
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
+import com.example.sswhatsapp.firebase.RealtimeDbManager;
+import com.example.sswhatsapp.firebase.RealtimeDbNetworkCallListener;
 import com.example.sswhatsapp.models.UserDetailsResponse;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
@@ -26,11 +28,12 @@ import com.example.sswhatsapp.utils.SessionManager;
 import com.example.sswhatsapp.utils.TimeHandler;
 import com.google.firebase.firestore.QuerySnapshot;
 
-public class SignUpActivity extends AppCompatActivity implements View.OnClickListener, RadioGroup.OnCheckedChangeListener, FirestoreNetworkCallListener {
+public class SignUpActivity extends AppCompatActivity implements View.OnClickListener, RadioGroup.OnCheckedChangeListener, FirestoreNetworkCallListener, RealtimeDbNetworkCallListener {
 
     //fields
     private ActivitySignUpBinding binding;
     private FirestoreManager firestoreManager;
+    private RealtimeDbManager realtimeDbManager;
     private InputMethodManager imm;
     private Uri imgProfileUri;
     private String fcmToken;
@@ -41,6 +44,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_sign_up);
         firestoreManager = new FirestoreManager(this, this);
+        realtimeDbManager = new RealtimeDbManager(this);
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
         //setting onClickListener
@@ -52,10 +56,9 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onClick(View view) {
-        if (view.getId() == R.id.btn_log_in)
+        if (view.getId() == R.id.btn_log_in) {
             startLoginActivity();
-
-        else if (view.getId() == R.id.btn_sign_up) {
+        } else if (view.getId() == R.id.btn_sign_up) {
             if (areSignupFieldsValid()) {
                 imm.hideSoftInputFromWindow(binding.rootLayout.getWindowToken(), 0); // closing soft keyboard
                 binding.rootLayout.scrollTo(0, 0);
@@ -256,7 +259,9 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
 
             case FirebaseConstants.SIGN_UP_USER_CALL:
                 Toast.makeText(this, "User successfully signed in!", Toast.LENGTH_LONG).show();
-                SessionManager.createUserSession((UserDetailsResponse) response);
+                UserDetailsResponse userDetailsResponse = (UserDetailsResponse) response;
+                realtimeDbManager.createNewUser(userDetailsResponse.getUserId());
+                SessionManager.createUserSession(userDetailsResponse);
                 startMainActivity();
                 break;
         }
@@ -271,5 +276,15 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     public void onFirestoreNetworkCallFailure(String errorMessage) {
         Log.d(FirebaseConstants.NETWORK_CALL, errorMessage);
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRealtimeNetworkCallSuccess(Object response, int serviceCode) {
+
+    }
+
+    @Override
+    public void onRealtimeNetworkCallFailure(String errorMessage) {
+
     }
 }

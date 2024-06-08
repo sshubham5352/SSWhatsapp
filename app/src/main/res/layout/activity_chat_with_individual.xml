@@ -101,6 +101,17 @@
             app:layout_constraintTop_toBottomOf="@id/toolbar" />
 
 
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/anim_chat_loading"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/size_chat_loading_lottie_anim"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/toolbar_bottom_line"
+            app:lottie_loop="true"
+            app:lottie_rawRes="@raw/chat_loading_lottie" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_chats"
             android:layout_width="match_parent"
@@ -111,7 +122,7 @@
             android:paddingHorizontal="4dp"
             android:paddingBottom="8dp"
             app:layout_constraintBottom_toTopOf="@id/message"
-            app:layout_constraintTop_toBottomOf="@id/toolbar_bottom_line" />
+            app:layout_constraintTop_toBottomOf="@id/anim_chat_loading" />
 
         <EditText
             android:id="@+id/message"

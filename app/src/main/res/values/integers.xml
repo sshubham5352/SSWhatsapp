@@ -6,4 +6,7 @@
     <!--  Misc (Numbers)  -->
     <item name="percent_chat_guideline_left" format="float" type="integer">0.18</item>
     <item name="percent_chat_guideline_right" format="float" type="integer">0.82</item>
+
+    <!--  Chats  -->
+    <item name="chat_fetch_limit" type="integer">30</item>
 </resources>

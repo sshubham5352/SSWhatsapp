@@ -14,7 +14,7 @@
     <color name="colorPrimaryText">#212121</color>
     <color name="colorPrimaryTextDark">#142232</color>
     <color name="colorSecondaryText">#757575</color>
-    <color name="colorDateText">#70797f</color>
+    <color name="colorDateText">#696E71</color>
     <color name="colorBgInput">#ECECEC</color>
     <color name="colorBgIcon">#33FFFFFF</color>
     <color name="colorErrorText">#B00020</color>

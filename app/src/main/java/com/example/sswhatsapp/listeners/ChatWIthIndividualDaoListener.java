@@ -4,9 +4,9 @@ public interface ChatWIthIndividualDaoListener {
 
     void dateBannerAdded(int position);
 
-    void chatAdded(int position);
+    void chatItemsAdded(int position);
 
-    void allChatsAdded(int startPosition, int chatCount);
+    void chatItemsAdded(int startPosition, int chatCount);
 
     void chatSentSuccess(int position);
 
@@ -14,9 +14,13 @@ public interface ChatWIthIndividualDaoListener {
 
     void chatReceivedSuccess(int position);
 
-    void chatStatusUpdated(int position);
+    void chatItemUpdated(int position);
 
     void receiverTypingStatusUpdated(boolean isTyping);
 
-    void receiverOnlineStatusUpdated(boolean isOnline);
+    void receiverOnlineStatusUpdated(boolean isOnline, String lastOnline);
+
+    void hideLoadingAnimation();
+
+    void changeRvStackingOrder(boolean stackFromEnd);
 }

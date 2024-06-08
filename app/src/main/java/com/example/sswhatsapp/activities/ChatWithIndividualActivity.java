@@ -9,6 +9,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -30,7 +31,7 @@ import com.example.sswhatsapp.utils.SoundManager;
 
 import java.util.List;
 
-public class ChatWithIndividualActivity extends BaseActivity implements View.OnClickListener, ChatWithIndividualAdapterListener, ChatWIthIndividualDaoListener {
+public class ChatWithIndividualActivity extends AppCompatActivity implements View.OnClickListener, ChatWithIndividualAdapterListener, ChatWIthIndividualDaoListener {
     //fields
     private ActivityChatWithIndividualBinding binding;
     ChatWithIndividualDao chatDao;
@@ -48,7 +49,9 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
 
         if (!chatDao.isEradicated()) {
             //make call to fetch previous chats
-            chatDao.fetchAllChats();
+            fetchPreviousChats();
+        } else {
+            changeRvStackingOrder(false);
         }
 
         //setting onClickListeners
@@ -57,7 +60,6 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
 
         // setting onEditorAction
         setMessageTextChangeListener();
-        setRvLayoutChangeListener();
 
         //onBackPressed
         getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
@@ -124,17 +126,37 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
             binding.imgUserProfile.setImageResource(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()));
         }
         binding.userName.setText(connectionWithUser.getName());
-
-        if (chatDao.getReceiverUser().isOnline()) {
-            receiverOnlineStatusUpdated(true);
-        }
     }
 
     private void initChatAdapter() {
-//        binding.rvSsContacts.addItemDecoration(new SSUsersListAdapter.SpacingItemDecoration(getResources().getDimensionPixelSize(R.dimen.space_between_rv_user_items)));
-        binding.rvChats.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        layoutManager.setStackFromEnd(true);
+        binding.rvChats.setLayoutManager(layoutManager);
         chatsAdapter = new ChatWithIndividualAdapter(this, this, chatsList, chatDao.getMyUserId());
         binding.rvChats.setAdapter(chatsAdapter);
+
+        binding.rvChats.addItemDecoration(new ChatWithIndividualAdapter.HeaderItemDecoration(this, binding.rvChats, new ChatWithIndividualAdapter.HeaderItemDecoration.StickyHeaderInterface() {
+            @Override
+            public boolean isHeader(int itemPosition) {
+                return chatDao.getChatsList().get(itemPosition).getChatCategory() == Constants.LAYOUT_TYPE_BANNER_DATE;
+            }
+
+            @Override
+            public int getHeaderPositionForChatItem(int chatItemPosition) {
+                for (int i = chatItemPosition; i >= 0; i--) {
+                    if (chatDao.getChatsList().get(i).getChatCategory() == Constants.LAYOUT_TYPE_BANNER_DATE) {
+                        return i;
+                    }
+                }
+                return chatItemPosition;
+            }
+
+            @Override
+            public void bindHeaderData(ChatWithIndividualAdapter.BannerDateHolder bannerDateHolder, int headerPosition) {
+                bannerDateHolder.binding.bannerDate.setText(chatDao.getChatsList().get(headerPosition).getDateBannerTitle());
+            }
+        }));
+
         binding.rvChats.getRecycledViewPool().setMaxRecycledViews(Constants.LAYOUT_TYPE_CHAT_MSG_SENT, 0);
         binding.rvChats.getRecycledViewPool().setMaxRecycledViews(Constants.LAYOUT_TYPE_CHAT_MSG_RECEIVED, 0);
     }
@@ -164,10 +186,6 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
         };
 
         binding.message.addTextChangedListener(listener);
-    }
-
-    private void setRvLayoutChangeListener() {
-        binding.rvChats.addOnLayoutChangeListener((view, i, i1, i2, i3, i4, i5, i6, i7) -> scrollChatRvToBottom());
     }
 
     //ANIM
@@ -207,8 +225,7 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
     }
 
     private void scrollChatRvToBottom() {
-        if (chatsList.size() != 0)
-            binding.rvChats.smoothScrollToPosition(chatsList.size() - 1);
+        binding.rvChats.scrollToPosition(chatsList.size() - 1);
     }
 
     @Override
@@ -227,43 +244,53 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
         }
     }
 
+    //CALL FROM DAO
     @Override
     public void dateBannerAdded(int position) {
         chatsAdapter.notifyItemInserted(position);
     }
 
+    //CALL FROM DAO
     @Override
-    public void chatAdded(int position) {
+    public void chatItemsAdded(int position) {
         chatsAdapter.notifyItemInserted(position);
+        scrollChatRvToBottom();
     }
 
+    //CALL FROM DAO
     @Override
-    public void allChatsAdded(int startPosition, int chatCount) {
+    public void chatItemsAdded(int startPosition, int chatCount) {
         chatsAdapter.notifyItemRangeInserted(startPosition, chatCount);
     }
 
+    //CALL FROM DAO
     @Override
     public void chatSentSuccess(int position) {
         chatsAdapter.notifyItemChanged(position);
         SoundManager.playChatSentSound();
     }
 
+    //CALL FROM DAO
     @Override
     public void chatSentFailure(int position) {
         chatsAdapter.notifyItemChanged(position);
     }
 
+    //CALL FROM DAO
     @Override
     public void chatReceivedSuccess(int position) {
         chatsAdapter.notifyItemInserted(position);
         SoundManager.playChatReceivedSound();
+        scrollChatRvToBottom();
     }
 
+    //CALL FROM DAO
     @Override
-    public void chatStatusUpdated(int position) {
+    public void chatItemUpdated(int position) {
         chatsAdapter.notifyItemChanged(position);
     }
 
+    //CALL FROM DAO
     @Override
     public void receiverTypingStatusUpdated(boolean isTyping) {
         if (isTyping) {
@@ -273,12 +300,52 @@ public class ChatWithIndividualActivity extends BaseActivity implements View.OnC
         }
     }
 
+    //CALL FROM DAO
     @Override
-    public void receiverOnlineStatusUpdated(boolean isOnline) {
+    public void receiverOnlineStatusUpdated(boolean isOnline, String lastOnline) {
         if (isOnline) {
+            if (!binding.userAvailabilityStatus.getText().toString().matches(getString(R.string.status_typing))) {
+                binding.userAvailabilityStatus.setText(getString(R.string.status_online));
+            }
             binding.userAvailabilityStatus.setVisibility(View.VISIBLE);
         } else {
-            binding.userAvailabilityStatus.setVisibility(View.GONE);
+            if (lastOnline != null) {
+                binding.userAvailabilityStatus.setText(lastOnline);
+                binding.userAvailabilityStatus.setVisibility(View.VISIBLE);
+            } else {
+                binding.userAvailabilityStatus.setVisibility(View.GONE);
+            }
         }
+    }
+
+
+    //CALL FROM DAO
+    @Override
+    public void hideLoadingAnimation() {
+        binding.animChatLoading.setVisibility(View.GONE);
+        binding.animChatLoading.pauseAnimation();
+    }
+
+    //CALL FROM DAO
+    @Override
+    public void changeRvStackingOrder(boolean stackFromEnd) {
+        ((LinearLayoutManager) binding.rvChats.getLayoutManager()).setStackFromEnd(stackFromEnd);
+    }
+
+
+    //CALL FROM ADAPTER
+    @Override
+    public void fetchPreviousChats() {
+        if (!chatDao.areAllPreviousChatsFetched()) {
+            binding.animChatLoading.playAnimation();
+            binding.animChatLoading.setVisibility(View.VISIBLE);
+            chatDao.fetchPreviousChats();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        chatDao.onDestroy();
+        super.onDestroy();
     }
 }
