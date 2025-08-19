@@ -1,2 +1,2 @@
-# SSWhatsapp
+# ChtiChat App
 Chat app
