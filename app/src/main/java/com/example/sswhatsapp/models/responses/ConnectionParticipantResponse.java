@@ -1,4 +1,4 @@
-package com.example.sswhatsapp.models;
+package com.example.sswhatsapp.models.responses;
 
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.example.sswhatsapp.utils.FirestoreHelper;

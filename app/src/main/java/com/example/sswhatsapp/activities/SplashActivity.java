@@ -5,79 +5,119 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.animation.AnimationUtils;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
 import com.example.sswhatsapp.R;
 import com.example.sswhatsapp.databinding.ActivitySplashBinding;
-import com.example.sswhatsapp.services.FCMService;
+import com.example.sswhatsapp.firebase.FirebaseConstants;
+import com.example.sswhatsapp.firebase.FirestoreManager;
+import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
+import com.example.sswhatsapp.models.responses.InterConnectionResponse;
+import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.SessionManager;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
-public class SplashActivity extends AppCompatActivity {
+import java.util.ArrayList;
+
+public class SplashActivity extends AppCompatActivity implements FirestoreNetworkCallListener {
 
     //fields
     private ActivitySplashBinding binding;
-    private FCMService fcmService;
-    private final long SPLASH_ANIM_TIME_MILLIS = 1750;
+    private final long SPLASH_ANIM_TIME_MILLIS = 1350;
+
+    private FirestoreManager firestoreManager;
+    long tStart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_splash);
-        binding.txtAppName.startAnimation(AnimationUtils.loadAnimation(this, R.anim.anim_right_twist));
-        long tStart = System.currentTimeMillis();
+//        binding.txtAppName.startAnimation(AnimationUtils.loadAnimation(this, R.anim.anim_right_twist));
+        tStart = System.currentTimeMillis();
 
         SessionManager.initSessionManager(getApplicationContext());
-        Intent intent;
 
-        if (SessionManager.isLoggedIn())
-            intent = new Intent(this, HomeActivity.class);
-        else
-            intent = new Intent(this, SignUpActivity.class);
+        //ALTERNATE CODE FLOW(TO TEMP ACTIVITY)
+//        Intent intent = new Intent(this, TempActivity.class);
+//        startActivity(intent);
+//        finish();
 
-        long tEnd = System.currentTimeMillis();
-        long elapsedTimeMillis = (tEnd - tStart);
-        long delayTimeMillis;
+        if (SessionManager.isLoggedIn()) {
+            firestoreManager = new FirestoreManager(this);
+            fetchMyInterconnectionsList(SessionManager.getMyInterconnectionsDocId());
+        } else {
+            startSignupActivity();
+        }
+    }
 
-        if (elapsedTimeMillis >= SPLASH_ANIM_TIME_MILLIS)
-            delayTimeMillis = 0;
-        else
-            delayTimeMillis = SPLASH_ANIM_TIME_MILLIS - elapsedTimeMillis;
-
+    private void startSignupActivity() {
+        Intent intent = new Intent(this, SignUpActivity.class);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             startActivity(intent);
             finish();
-        }, delayTimeMillis);
+        }, getDelayTimeForStartActivity());
+    }
+
+    private void startHomeActivity(ArrayList<InterConnectionResponse> myInterconnectionsList) {
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.putExtra(Constants.INTENT_MY_INTERCONNECTIONS_LIST_EXTRA, myInterconnectionsList);
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            startActivity(intent);
+            finish();
+        }, getDelayTimeForStartActivity());
+    }
+
+    private long getDelayTimeForStartActivity() {
+        long tEnd = System.currentTimeMillis();
+        long elapsedTimeMillis = (tEnd - tStart);
+
+        if (elapsedTimeMillis >= SPLASH_ANIM_TIME_MILLIS)
+            return 50;      //to avoid lagging animation
+        else
+            return (SPLASH_ANIM_TIME_MILLIS - elapsedTimeMillis);
+    }
+
+    //INTERNET CALL
+    public void fetchMyInterconnectionsList(String myInterconnectionsDocId) {
+        firestoreManager.getMyInterconnectionsList(myInterconnectionsDocId, false);
+    }
 
 
-        //   ------------------//////------------------    //
+    @Override
+    public void onFirestoreNetworkCallSuccess(Object response, int serviceCode) {
+        switch (serviceCode) {
+            case (FirebaseConstants.GET_MY_INTERCONNECTIONS_LIST_CALL): {
+                QuerySnapshot querySnapshot = (QuerySnapshot) response;
+                ArrayList<InterConnectionResponse> myInterconnectionsList = new ArrayList<>();
+                for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                    myInterconnectionsList.add(doc.toObject(InterConnectionResponse.class));
+                }
 
-//        ALTERING CODE FLOW: 1
-//        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-//            Intent alterIntent = new Intent(SplashActivity.this, ChatWithIndividualActivity.class);
-//
-//            UserDetailsResponse response = new UserDetailsResponse("Amit8287251828", "Bhrata Shree", "male", "amits6383@gmail.com", "8287251828", "32 23", "https://firebasestorage.googleapis.com/v0/b/ss-whatsapp-84666.appspot.com/o/User%20Profile%20Images%2FIMG-20210820-WA0022.jpg?alt=media&token=11bfd3b1-18b5-47c6-b048-82d7b81ae311");
-//            alterIntent.putExtra(Constants.INTENT_USER_DETAILS_EXTRA, response);
-//            alterIntent.putExtra(Constants.INTENT_CONNECTION_ID_EXTRA, "Shubham9818231612_&_Amit8287251828");
-//            alterIntent.putExtra(Constants.INTENT_IS_ERADICATED, false);
-//            startActivity(alterIntent);
-//            finish();
-//        }, delayTimeMillis);
+                startHomeActivity(myInterconnectionsList);
+                break;
+            }
+        }
+    }
 
+    @Override
+    public void onFirestoreNetworkCallFailure(Object response, int serviceCode) {
+        switch (serviceCode) {
+            case (FirebaseConstants.GET_MY_INTERCONNECTIONS_LIST_CALL): {
+                Toast.makeText(this, FirebaseConstants.GENERAL_ERROR, Toast.LENGTH_SHORT).show();
+                startHomeActivity(new ArrayList<>());
+                break;
+            }
+        }
+    }
 
-//        ALTERING CODE FLOW: 2
-//        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-//            Intent alterIntent = new Intent(SplashActivity.this, ChatWithIndividualActivity.class);
-//
-//            UserDetailsResponse response = new UserDetailsResponse("Shubham9818231612", "Shubham Sharma", "male", "sshubham5352@gmail.com", "9818231612", "32 23", "https://firebasestorage.googleapis.com/v0/b/ss-whatsapp-84666.appspot.com/o/User%20Profile%20Images%2F2023_12_29_00_58_16?alt=media&token=235cc553-359f-4039-847d-525b47b0a927");
-//            alterIntent.putExtra(Constants.INTENT_USER_DETAILS_EXTRA, response);
-//            alterIntent.putExtra(Constants.INTENT_CONNECTION_ID_EXTRA, "Shubham9818231612_&_Amit8287251828");
-//            alterIntent.putExtra(Constants.INTENT_IS_NEW_CONNECTION_EXTRA, false);
-//            startActivity(alterIntent);
-//            finish();
-//        }, delayTimeMillis);
+    @Override
+    public void onFirestoreNetworkCallFailure(String errorMessage) {
 
     }
 }

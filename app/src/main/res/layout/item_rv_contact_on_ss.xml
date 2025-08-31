@@ -7,7 +7,8 @@
         android:id="@+id/root_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:context="com.example.sswhatsapp.adapters.SSUsersListAdapter">
+        android:orientation="horizontal"
+        tools:context="com.example.sswhatsapp.adapters.SSUsersAdapter">
 
         <com.makeramen.roundedimageview.RoundedImageView
             android:id="@+id/img_user_profile"

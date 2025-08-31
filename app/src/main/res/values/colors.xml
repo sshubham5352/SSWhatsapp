@@ -30,7 +30,8 @@
     <color name="colorGray">#7C7C7C</color>
     <color name="colorLightGray">#cfd8df</color>
     <color name="colorThinGray">#407C7C7C</color>
-    <color name="colorDarkGray">#454545</color>
+    <color name="colorDarkGray">#737979</color>
+    <color name="colorDarkGray2">#454545</color>
     <color name="colorUnselectedText">#DCDCDC</color>
     <color name="colorDarkGreen">#18C872</color>
     <color name="colorDullGreen">#B31A3D27</color>

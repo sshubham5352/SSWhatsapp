@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        tools:context="com.example.sswhatsapp.adapters.NonSSUsersListAdapter">
+        tools:context="com.example.sswhatsapp.adapters.NonSSUsersAdapter">
 
         <com.makeramen.roundedimageview.RoundedImageView
             android:id="@+id/img_user_profile"

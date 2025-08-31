@@ -19,7 +19,9 @@ public class Constants {
     public static final String INTENT_USER_DETAILS_EXTRA = "201";
     public static final String INTENT_MY_INTERCONNECTION_EXTRA = "202";
     public static final String INTENT_RECEIVERS_INTERCONNECTION_EXTRA = "203";
-    public static final String ARRIVED_FROM_NOTIFICATION_EXTRA = "204";
+    public static final String INTENT_MY_INTERCONNECTIONS_LIST_EXTRA = "204";
+    public static final String INTENT_LAST_CHAT_ITEM_EXTRA = "205";
+    public static final String INTENT_COMING_FROM_NOTIFICATION_EXTRA = "206";
 
 
     //------------------------ RecyclerView CONSTANTS ------------------------//
@@ -49,6 +51,7 @@ public class Constants {
     public static final int LAYOUT_TYPE_BANNER_DATE = 100;
     public static final int LAYOUT_TYPE_CHAT_MSG_SENT = 101;
     public static final int LAYOUT_TYPE_CHAT_MSG_RECEIVED = 102;
+    public static final int LAYOUT_TYPE_MY_INTERCONNECTION = 121;
 
 
     //------------------------ NOTIFICATION CONSTANTS ------------------------//

@@ -12,11 +12,11 @@ import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
 import com.example.sswhatsapp.firebase.RealtimeDbManager;
 import com.example.sswhatsapp.listeners.ChatWIthIndividualDaoListener;
-import com.example.sswhatsapp.models.ChatItemResponse;
-import com.example.sswhatsapp.models.ConnectionParticipantResponse;
-import com.example.sswhatsapp.models.InterConnection;
-import com.example.sswhatsapp.models.UserDetailsResponse;
-import com.example.sswhatsapp.models.UserOnlineAvailabilityResponse;
+import com.example.sswhatsapp.models.responses.ChatItemResponse;
+import com.example.sswhatsapp.models.responses.ConnectionParticipantResponse;
+import com.example.sswhatsapp.models.responses.InterConnectionResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
+import com.example.sswhatsapp.models.responses.UserOnlineAvailabilityResponse;
 import com.example.sswhatsapp.retrofit.RetrofitConstants;
 import com.example.sswhatsapp.retrofit.RetrofitManager;
 import com.example.sswhatsapp.retrofit.RetrofitNetworkCallListener;
@@ -35,6 +35,8 @@ import com.google.firebase.firestore.QuerySnapshot;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,12 +48,12 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     private final RealtimeDbManager realtimeDbManager;
     private final RetrofitManager retrofitManager;
     private final ChatWIthIndividualDaoListener mListener;
-    private final UserDetailsResponse senderUser, receiverUser;
-    private final InterConnection myInterconnection, receiversInterconnection;
+    private final UserDetailsResponse myUserDetails, receiverUser;
+    private final InterConnectionResponse myInterconnection, receiversInterconnection;
     private final ConnectionParticipantResponse myParticipantItem, receiverParticipantItem;
     private final LinkedList<ChatItemResponse> chatsList;
     private String currentBannerTimeStamp;
-    private boolean isReceiverOnline;
+    private UserOnlineAvailabilityResponse receiverOnlineAvailability;
     boolean allPreviousChatsFetched, isFetchingPreviousChatsNetworkCallInProgress;
 
     //FIRESTORE LISTENERS
@@ -66,22 +68,23 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
 
     //CONSTRUCTOR
     public ChatWithIndividualDao(Context context, ChatWIthIndividualDaoListener listener,
-                                 UserDetailsResponse senderUser,
+                                 UserDetailsResponse myUserDetails,
                                  UserDetailsResponse receiverUser,
-                                 InterConnection myInterconnection,
-                                 InterConnection receiversInterconnection) {
+                                 InterConnectionResponse myInterconnection,
+                                 InterConnectionResponse receiversInterconnection) {
         mContext = context;
         mListener = listener;
-        this.senderUser = senderUser;
+        this.myUserDetails = myUserDetails;
         this.receiverUser = receiverUser;
         this.myInterconnection = myInterconnection;
         this.receiversInterconnection = receiversInterconnection;
 
-        myParticipantItem = new ConnectionParticipantResponse(senderUser.getUserId(), false, true);
+        myParticipantItem = new ConnectionParticipantResponse(myUserDetails.getUserId(), false, true);
         receiverParticipantItem = new ConnectionParticipantResponse(receiverUser.getUserId(), false, false);
         firestoreManager = new FirestoreManager(context, this);
         realtimeDbManager = new RealtimeDbManager();
         retrofitManager = new RetrofitManager(this);
+        receiverOnlineAvailability = new UserOnlineAvailabilityResponse();
         chatsList = new LinkedList<>();
         currentBannerTimeStamp = null;
 
@@ -116,15 +119,15 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
         } else {
             lastReceivedChatTimeStamp = chatsList.get(getLastChatItemIndex()).getTimeStamp();
         }
-        chatCollectionListenerRegistration = firestoreManager.setIndividualConnectionListener(myInterconnection.getConnectionId(), chatCollectionListener, lastReceivedChatTimeStamp);
+        chatCollectionListenerRegistration = firestoreManager.addIndividualChatConnectionListener(myInterconnection.getConnectionId(), chatCollectionListener, lastReceivedChatTimeStamp);
     }
 
     public void attachChatParticipantListener() {
-        chatParticipantListenerRegistration = firestoreManager.setConnectionParticipantListener(myInterconnection.getConnectionId(), receiverUser.getUserId(), chatParticipantListener);
+        chatParticipantListenerRegistration = firestoreManager.addConnectionParticipantListener(myInterconnection.getConnectionId(), receiverUser.getUserId(), chatParticipantListener);
     }
 
     public void attachReceiverDocListener() {
-        firestoreManager.setUserDocListener(receiverUser.getUserId(), receiverDocListener);
+        firestoreManager.addUserDocListener(receiverUser.getUserId(), receiverDocListener);
     }
 
     //FIRESTORE COLLECTION LISTENER
@@ -137,11 +140,15 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
                 switch (doc.getType()) {
                     case ADDED: {
                         String senderId = doc.getDocument().getString(FirebaseConstants.KEY_SENDER_ID);
-                        if (senderId.matches(receiverUser.getUserId())) {
-                            ChatItemResponse chatItem = doc.getDocument().toObject(ChatItemResponse.class);
-                            newChatReceivedSuccess(chatItem);
-                            updateChatStatus(Constants.CHAT_STATUS_READ, chatItem.getChatId());
+                        String chatId = doc.getDocument().getString(FirebaseConstants.KEY_CHAT_ID);
+                        if (senderId.matches(getMyUserId()) || chatsList.get(getLastChatItemIndex()).getChatId().matches(chatId)) {
+                            //fetching the same last chatItem
+                            return;
                         }
+
+                        ChatItemResponse chatItem = doc.getDocument().toObject(ChatItemResponse.class);
+                        newChatReceivedSuccess(chatItem);
+                        updateChatStatus(Constants.CHAT_STATUS_READ, chatItem.getChatId());
                         break;
                     }
 
@@ -162,14 +169,14 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
                 return;
             }
             for (DocumentChange doc : value.getDocumentChanges()) {
-                ConnectionParticipantResponse participantResponse = doc.getDocument().toObject(ConnectionParticipantResponse.class);
+                ConnectionParticipantResponse response = doc.getDocument().toObject(ConnectionParticipantResponse.class);
 
-                if (receiverParticipantItem.isTyping() != participantResponse.isTyping()) {
-                    receiverParticipantItem.setTyping(participantResponse.isTyping());
+                if (receiverParticipantItem.isTyping() != response.isTyping()) {
+                    receiverParticipantItem.setTyping(response.isTyping());
                     mListener.receiverTypingStatusUpdated(receiverParticipantItem.isTyping());
                 }
-                if (receiverParticipantItem.isLive() != participantResponse.isLive()) {
-                    receiverParticipantItem.setLive(participantResponse.isLive());
+                if (receiverParticipantItem.isLive() != response.isLive()) {
+                    receiverParticipantItem.setLive(response.isLive());
                 }
             }
         };
@@ -181,7 +188,6 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
             if (error != null || value == null) {
                 return;
             }
-
             UserDetailsResponse receiverResponse = value.toObject(UserDetailsResponse.class);
         };
     }
@@ -198,11 +204,15 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
                 if (response.isOnline()) {
                     mListener.receiverOnlineStatusUpdated(true, null);
                 } else {
-                    String lastOnlineMsg = TimeHandler.getLastOnlineMsg(response.getLastOnlineTime());
-                    mListener.receiverOnlineStatusUpdated(false, lastOnlineMsg);
+                    if (response.getLastOnlineTime() == receiverOnlineAvailability.lastOnline) {
+                        mListener.receiverOnlineStatusUpdated(false, null);
+                    } else {
+                        String lastOnlineMsg = TimeHandler.getLastSeenTimeStamp(response.getLastOnlineTime());
+                        mListener.receiverOnlineStatusUpdated(false, lastOnlineMsg);
+                    }
                 }
 
-                isReceiverOnline = response.isOnline;
+                receiverOnlineAvailability.set(response);
             }
 
             @Override
@@ -230,7 +240,11 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     }
 
     public String getMyUserId() {
-        return senderUser.getUserId();
+        return myUserDetails.getUserId();
+    }
+
+    public InterConnectionResponse getMyInterconnection() {
+        return myInterconnection;
     }
 
     public boolean isItTodaysBannerDate() {
@@ -244,7 +258,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     }
 
     public boolean isReceiverOnline() {
-        return isReceiverOnline;
+        return receiverOnlineAvailability.isOnline();
     }
 
     public boolean areAllPreviousChatsFetched() {
@@ -300,14 +314,33 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
         for (int position = chatsList.size() - 1; position >= 0; position--) {
             currentChatItem = chatsList.get(position);
             if (currentChatItem.getChatId().matches(chatId)) {
+                if (newChatStatus == Constants.CHAT_STATUS_READ) {
+                    updatePreviousChatsToRead(position);
+                }
                 if (currentChatItem.getChatStatus() < newChatStatus) {
                     currentChatItem.setChatStatus(newChatStatus);
                     mListener.chatItemUpdated(position);
                 } else if (currentChatItem.getChatStatus() > newChatStatus) {
+                    //particular case when a seen chat item is again converted to received status by NotificationManager
                     updateChatStatus(currentChatItem.getChatStatus(), currentChatItem.getChatId());
                 }
-
                 break;
+            }
+        }
+    }
+
+    private void updatePreviousChatsToRead(int lastReadItemPosition) {
+        for (int i = lastReadItemPosition - 1; i > 0; i--) {
+            if (chatsList.get(i).getChatId().matches(ChatItemResponse.CHAT_DATE_BANNER_ID)) {
+                continue;
+            }
+            if (chatsList.get(i).senderId.matches(getMyUserId())) {
+                if (chatsList.get(i).getChatStatus() == Constants.CHAT_STATUS_READ) {
+                    return;
+                } else {
+                    chatsList.get(i).setChatStatus(Constants.CHAT_STATUS_READ);
+                    mListener.chatItemUpdated(i);
+                }
             }
         }
     }
@@ -323,42 +356,57 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     }
 
     private void addPreviousChatsInList(QuerySnapshot querySnapshot) {
-        String bannerTimeStamp;
-        ChatItemResponse chatItem;
-        int previousListSize = chatsList.size();
+        String topmostBannerTimeStamp;
+        int chatsListSizeBeforeInsertion = chatsList.size();
+        ArrayList<String> unseenChatsIdList = new ArrayList<>();
 
-        if (previousListSize == 0) {
-            //for the first time previous chat call
-            bannerTimeStamp = querySnapshot.getDocuments().get(0).toObject(ChatItemResponse.class).getTimeStamp();
-            currentBannerTimeStamp = bannerTimeStamp;
+        if (chatsListSizeBeforeInsertion == 0) {
+            /*
+             * As chatsList size is 0 which means this is the first previousChatsCall
+             * and therefore we need to assign topmostBannerTimeStamp with the firstChatItem of the Response data
+             * NOTE: {@param(topmostBannerTimeStamp), as its name suggests, represents the topmost dateBanner in the chatsList which
+             *        will be used to compare and add previousChats in the list.
+             *        @param(currentBannerTimeStamp) represents the bottommost dateBanner in the list which is used to compare and
+             *        add newChats in the list.
+             *       }
+             * */
+            topmostBannerTimeStamp = querySnapshot.getDocuments().get(0).toObject(ChatItemResponse.class).getTimeStamp();
+            currentBannerTimeStamp = topmostBannerTimeStamp;
         } else {
             /*
              * we need to remove the date banner present at the top of the list
+             * As more chat items may come under this banner so we would add this banner at it's appropriate position in the list
              * */
-            ChatItemResponse topMostHeader = chatsList.remove(0);
-            bannerTimeStamp = topMostHeader.getTimeStamp();
+            ChatItemResponse topMostHeaderInCurrentList = chatsList.remove(0);
+            topmostBannerTimeStamp = topMostHeaderInCurrentList.getTimeStamp();
         }
         /*
          * ADDING FETCHED CHAT DOCUMENTS IN CHAT_LIST
          * DOCUMENTS FETCHED FROM SERVER ARE IN THE DESCENDING ORDER OF THEIR DATE OF SENT
          **/
         for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-            chatItem = doc.toObject(ChatItemResponse.class);
-            if (!TimeHandler.areSameDays(chatItem.getTimeStamp(), bannerTimeStamp)) {
-                addDateBannerInChatList(bannerTimeStamp, true, false);
-                bannerTimeStamp = chatItem.getTimeStamp();
+            ChatItemResponse chatItem = doc.toObject(ChatItemResponse.class);
+            if (!TimeHandler.areSameDays(chatItem.getTimeStamp(), topmostBannerTimeStamp)) {
+                addDateBannerInChatList(topmostBannerTimeStamp, true, false);
+                topmostBannerTimeStamp = chatItem.getTimeStamp();
             }
             chatsList.addFirst(chatItem);
+
+            if (chatItem.receiverId.matches(getMyUserId()) && chatItem.chatStatus != Constants.CHAT_STATUS_READ) {
+                unseenChatsIdList.add(chatItem.chatId);
+            }
         }
 //               ADDING THE DATE BANNER FOR THE TOP MOST CHATS
-        addDateBannerInChatList(bannerTimeStamp, true, false);
+        addDateBannerInChatList(topmostBannerTimeStamp, true, false);
 
-        mListener.chatItemsAdded(0, chatsList.size() - previousListSize);
+        mListener.chatItemsAdded(0, chatsList.size() - chatsListSizeBeforeInsertion);
         /*
          * updating the layout of the top most chat Item
          * As it may no longer be the first chat in the chat thread hence no longer require tail layout
          * */
-        mListener.chatItemUpdated(chatsList.size() - previousListSize + 1);
+        mListener.chatItemUpdated(chatsList.size() - chatsListSizeBeforeInsertion + 1);
+        //updating the chat status of the unseen chats
+        updateChatStatus(Constants.CHAT_STATUS_READ, unseenChatsIdList);
     }
 
 
@@ -368,9 +416,9 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
             addDateBannerInChatList(TimeHandler.getCurrentTimeStamp(), false, true);
             mListener.dateBannerAdded(getLastChatItemIndex());
         }
-        ChatItemResponse chatItem = new ChatItemResponse(Constants.CHAT_CATEGORY_MSG,
+        ChatItemResponse chatItem = new ChatItemResponse(getConnectionId(), Constants.CHAT_CATEGORY_MSG,
                 Constants.CHAT_STATUS_PENDING,
-                senderUser.getUserId(),
+                myUserDetails.getUserId(),
                 receiverUser.getUserId(),
                 message,
                 TimeHandler.getCurrentTimeStamp(),
@@ -393,7 +441,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
 
     //CALL FROM CONTROLLER
     public void sendNotification(ChatItemResponse chatItem) {
-        if (isReceiverOnline || receiverParticipantItem.isLive()) {
+        if (receiverOnlineAvailability.isOnline && receiverParticipantItem.isLive()) {
             /*
              * Don't send the notification if the user is Live on chat
              **/
@@ -409,14 +457,14 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
         JSONObject dataMap = new JSONObject();
         try {
             dataMap.put(RetrofitConstants.NOTIFICATION_TYPE, Integer.toString(RetrofitConstants.SEND_CHAT_NOTIFICATION_CALL));
-            dataMap.put(FirebaseConstants.KEY_FCM_TOKEN, senderUser.getFcmToken());
-            dataMap.put(FirebaseConstants.KEY_USER_ID, senderUser.getUserId());                         //notification sender ID
-            dataMap.put(FirebaseConstants.KEY_SENDER_ID, senderUser.getUserId());
+            dataMap.put(FirebaseConstants.KEY_FCM_TOKEN, myUserDetails.getFcmToken());
+            dataMap.put(FirebaseConstants.KEY_USER_ID, myUserDetails.getUserId());                         //notification sender ID
+            dataMap.put(FirebaseConstants.KEY_SENDER_ID, myUserDetails.getUserId());
             dataMap.put(FirebaseConstants.KEY_RECEIVER_ID, receiverUser.getUserId());
-            dataMap.put(FirebaseConstants.KEY_USER_NAME, senderUser.getName());
-            dataMap.put(FirebaseConstants.KEY_USER_GENDER, senderUser.getGender());
-            dataMap.put(FirebaseConstants.KEY_USER_MOBILE_NO, senderUser.getMobileNo());
-            dataMap.put(FirebaseConstants.KEY_USER_PROFILE_IMG_URL, senderUser.getProfileImgUrl());
+            dataMap.put(FirebaseConstants.KEY_USER_NAME, myUserDetails.getName());
+            dataMap.put(FirebaseConstants.KEY_USER_GENDER, myUserDetails.getGender());
+            dataMap.put(FirebaseConstants.KEY_USER_MOBILE_NO, myUserDetails.getMobileNo());
+            dataMap.put(FirebaseConstants.KEY_USER_PROFILE_IMG_URL, myUserDetails.getProfileImgUrl());
             dataMap.put(FirebaseConstants.KEY_CONNECTION_ID, myInterconnection.getConnectionId());
             dataMap.put(FirebaseConstants.KEY_CHAT_ID, chatItem.getChatId());
             dataMap.put(FirebaseConstants.KEY_CHAT_CATEGORY, Integer.toString(chatItem.getChatCategory()));
@@ -428,6 +476,40 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
         retrofitManager.sendChatNotificationCall(receiverUser.getFcmToken(), dataMap);
     }
 
+    public void sendNotificationV1(ChatItemResponse chatItem) {
+        if (receiverOnlineAvailability.isOnline && receiverParticipantItem.isLive()) {
+            /*
+             * Don't send the notification if the user is Live on chat
+             **/
+            return;
+        }
+        if (Helper.isNill(receiverUser.getFcmToken())) {
+            /*
+             * As FCM token of receiver's device in null so can't send the notification
+             **/
+            return;
+        }
+
+        HashMap<String, String> dataMap = new HashMap<>();
+        dataMap.put(RetrofitConstants.NOTIFICATION_TYPE, Integer.toString(RetrofitConstants.SEND_CHAT_NOTIFICATION_CALL));
+        dataMap.put(FirebaseConstants.KEY_FCM_TOKEN, myUserDetails.getFcmToken());
+        dataMap.put(FirebaseConstants.KEY_USER_ID, myUserDetails.getUserId());                         //notification sender ID
+        dataMap.put(FirebaseConstants.KEY_SENDER_ID, myUserDetails.getUserId());
+        dataMap.put(FirebaseConstants.KEY_RECEIVER_ID, receiverUser.getUserId());
+        dataMap.put(FirebaseConstants.KEY_USER_NAME, myUserDetails.getName());
+        dataMap.put(FirebaseConstants.KEY_USER_GENDER, myUserDetails.getGender());
+        dataMap.put(FirebaseConstants.KEY_USER_MOBILE_NO, myUserDetails.getMobileNo());
+        dataMap.put(FirebaseConstants.KEY_USER_PROFILE_IMG_URL, myUserDetails.getProfileImgUrl());
+        dataMap.put(FirebaseConstants.KEY_CONNECTION_ID, myInterconnection.getConnectionId());
+        dataMap.put(FirebaseConstants.KEY_CHAT_ID, chatItem.getChatId());
+        dataMap.put(FirebaseConstants.KEY_CHAT_CATEGORY, Integer.toString(chatItem.getChatCategory()));
+        dataMap.put(FirebaseConstants.KEY_CHAT_MESSAGE, chatItem.getMessage());
+
+
+        retrofitManager.sendChatNotificationCallV1(receiverUser.getFcmToken(), dataMap);
+    }
+
+
     //NETWORK CALL
     public void sendMessageChat(ChatItemResponse chatItem) {
         firestoreManager.sendMessageChat(myInterconnection.getConnectionId(), chatItem);
@@ -437,7 +519,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     public void fetchPreviousChats() {
         isFetchingPreviousChatsNetworkCallInProgress = true;
         if (chatsList.isEmpty()) {
-            firestoreManager.fetchChatItems(myInterconnection.getConnectionId(), senderUser.getUserId(), CHATS_FETCH_LIMIT);
+            firestoreManager.getChatItems(myInterconnection.getConnectionId(), myUserDetails.getUserId(), CHATS_FETCH_LIMIT);
         } else {
             String topMostChatDocId = null;
             if (!chatsList.isEmpty()) {
@@ -448,18 +530,18 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
                     }
                 }
             }
-            firestoreManager.fetchChatItems(myInterconnection.getConnectionId(), senderUser.getUserId(), topMostChatDocId, CHATS_FETCH_LIMIT);
+            firestoreManager.getChatItems(myInterconnection.getConnectionId(), myUserDetails.getUserId(), topMostChatDocId, CHATS_FETCH_LIMIT);
         }
     }
 
     //NETWORK CALL
     public void updateMyIsEradicatedField(boolean isEradicated) {
-        firestoreManager.updateMyIsEradicatedField(senderUser.getMyInterconnectionsDocId(), receiverUser.getUserId(), isEradicated);
+        firestoreManager.updateMyIsEradicatedField(myUserDetails.getMyInterconnectionsDocId(), receiverUser.getUserId(), isEradicated);
     }
 
     //NETWORK CALL
     public void updateReceiversIsEradicatedField(boolean isEradicated) {
-        firestoreManager.updateReceiversIsEradicatedField(receiverUser.getMyInterconnectionsDocId(), senderUser.getUserId(), isEradicated);
+        firestoreManager.updateReceiversIsEradicatedField(receiverUser.getMyInterconnectionsDocId(), myUserDetails.getUserId(), isEradicated);
     }
 
     //NETWORK CALL
@@ -468,8 +550,10 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     }
 
     //NETWORK CALL
-    public void updateAllChatsStatusAsRead() {
-        firestoreManager.updateAllChatsStatusAsRead(getMyUserId(), getConnectionId());
+    public void updateChatStatus(int newChatStatus, ArrayList<String> chatIdList) {
+        if (!chatIdList.isEmpty()) {
+            firestoreManager.updateChatsStatus(newChatStatus, chatIdList, getConnectionId(), null);
+        }
     }
 
     //NETWORK CALL
@@ -489,7 +573,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     @Override
     public void onFirestoreNetworkCallSuccess(Object response, int serviceCode) {
         switch (serviceCode) {
-            case FirebaseConstants.FETCH_PREVIOUS_CHATS_CALL: {
+            case FirebaseConstants.GET_PREVIOUS_CHATS_CALL: {
                 QuerySnapshot snapshot = (QuerySnapshot) response;
 
                 if (!snapshot.getDocuments().isEmpty()) {
@@ -528,7 +612,7 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
     @Override
     public void onFirestoreNetworkCallFailure(Object response, int serviceCode) {
         switch (serviceCode) {
-            case FirebaseConstants.FETCH_PREVIOUS_CHATS_CALL: {
+            case FirebaseConstants.GET_PREVIOUS_CHATS_CALL: {
                 isFetchingPreviousChatsNetworkCallInProgress = false;
                 mListener.hideLoadingAnimation();
                 break;
@@ -581,6 +665,9 @@ public class ChatWithIndividualDao implements FirestoreNetworkCallListener, Retr
 
     //CALL FROM ACTIVITY
     public void onDestroy() {
+        updateMyTypingStatus(false);
         realtimeDbManager.removeUserAvailabilityListener(receiverUser.getUserId(), userAvailabilityListener);
+        detachChatsCollectionListener();
+        detachChatParticipantListener();
     }
 }

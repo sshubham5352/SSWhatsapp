@@ -10,26 +10,26 @@ import android.view.animation.AlphaAnimation;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.sswhatsapp.databinding.ItemRvContactOnSsBinding;
-import com.example.sswhatsapp.listeners.SSUsersListListener;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.listeners.SSUsersAdapterListener;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
-import com.example.sswhatsapp.utils.PicassoCache;
 
 import java.util.List;
 
-public class SSUsersListAdapter extends RecyclerView.Adapter<SSUsersListAdapter.ViewHolder> {
+public class SSUsersAdapter extends RecyclerView.Adapter<SSUsersAdapter.ViewHolder> {
     //Field Declaration
     Context mContext;
-    SSUsersListListener mListener;
+    SSUsersAdapterListener mListener;
     LayoutInflater inflater;
     List<UserDetailsResponse> usersList;
 
     public UserDetailsResponse selectedUser;
     int dynamicSize;
 
-    public SSUsersListAdapter(Context context, SSUsersListListener listener, List<UserDetailsResponse> usersList) {
+    public SSUsersAdapter(Context context, SSUsersAdapterListener listener, List<UserDetailsResponse> usersList) {
         mContext = context;
         mListener = listener;
         this.usersList = usersList;
@@ -55,12 +55,14 @@ public class SSUsersListAdapter extends RecyclerView.Adapter<SSUsersListAdapter.
         if (Helper.isNill(currentItem.getProfileImgUrl())) {
             holder.binding.imgUserProfile.setImageResource(Helper.getProfilePlaceholderImg(mContext, currentItem.gender));
         } else {
-            PicassoCache.getPicassoInstance(mContext).load(currentItem.getProfileImgUrl()).
-                    placeholder(Helper.getProfilePlaceholderImg(mContext, currentItem.gender))
+            Glide.with(mContext)
+                    .load(currentItem.getProfileImgUrl())
+                    .placeholder(Helper.getProfilePlaceholderImg(mContext, currentItem.gender))
+                    .error(Helper.getProfilePlaceholderImg(mContext, currentItem.gender))
                     .into(holder.binding.imgUserProfile);
         }
 
-        Helper.setText(currentItem.getName(), holder.binding.name, true);
+        Helper.setText(currentItem.getLocalPhoneName(), holder.binding.name, true);
         Helper.setText(currentItem.getTagline(), holder.binding.tagline, true);
 
         if (position == usersList.size() - 1)

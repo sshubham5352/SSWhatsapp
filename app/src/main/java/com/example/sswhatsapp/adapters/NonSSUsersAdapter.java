@@ -11,24 +11,24 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.sswhatsapp.databinding.ItemRvContactNotOnSsBinding;
-import com.example.sswhatsapp.listeners.NonSSUsersListListener;
+import com.example.sswhatsapp.listeners.NonSSUsersAdapterListener;
 import com.example.sswhatsapp.models.UserDeviceContact;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
 
 import java.util.List;
 
-public class NonSSUsersListAdapter extends RecyclerView.Adapter<NonSSUsersListAdapter.ViewHolder> {
+public class NonSSUsersAdapter extends RecyclerView.Adapter<NonSSUsersAdapter.ViewHolder> {
     //Field Declaration
     Context mContext;
-    NonSSUsersListListener mListener;
+    NonSSUsersAdapterListener mListener;
     LayoutInflater inflater;
     List<UserDeviceContact> contactList;
     int totalViewCreate = 0;
     int viewLoaded = 0;
     int dynamicSize;
 
-    public NonSSUsersListAdapter(Context context, NonSSUsersListListener listener, List<UserDeviceContact> usersList) {
+    public NonSSUsersAdapter(Context context, NonSSUsersAdapterListener listener, List<UserDeviceContact> usersList) {
         mContext = context;
         mListener = listener;
         this.contactList = usersList;

@@ -2,6 +2,7 @@ package com.example.sswhatsapp.firebase;
 
 public class FirebaseConstants {
     //------------------------ FIREBASE CONSTANTS ------------------------//
+    public static final String PROJECT_ID = "ss-whatsapp-84666";
 
     //--------- STORAGE FOLDERS ---------//
     public static final String USER_PROFILE_IMAGES_FOLDER = "User Profile Images/";
@@ -17,7 +18,6 @@ public class FirebaseConstants {
 
     //---- FIRESTORE CALL CODES ----//
     public static final int UPDATE_ONLINE_STATUS_CALL = 218;
-
 
 
     //--------- FIRESTORE CONSTANTS ---------//
@@ -71,6 +71,7 @@ public class FirebaseConstants {
     public static final String KEY_CONNECTIONS_WITH = "connection_with";
     public static final String KEY_CONNECTION_WITH = "connection_with";
     public static final String KEY_IS_ERADICATED = "is_eradicated";
+    public static final String KEY_MODIFIED_AT = "modified_at";
     public static final String KEY_IS_LIVE = "is_live";
     public static final String KEY_IS_TYPING = "is_typing";
 
@@ -98,13 +99,18 @@ public class FirebaseConstants {
     public static final int CREATE_RECEIVERS_INTERCONNECTION_CALL = 210;
     public static final int DELETE_CONNECTION_CALL = 211;
     public static final int SEND_MESSAGE_CHAT_CALL = 212;
-    public static final int FETCH_PREVIOUS_CHATS_CALL = 213;
+    public static final int GET_PREVIOUS_CHATS_CALL = 213;
     public static final int UPDATE_MY_IS_ERADICATED_FIELD_CALL = 214;
     public static final int UPDATE_RECEIVERS_IS_ERADICATED_FIELD_CALL = 215;
     public static final int GET_FCM_TOKEN_CALL = 216;
     public static final int UPDATE_FIELD_FCM_TOKEN_CALL = 217;
     public static final int UPDATE_CHATS_STATUS_CALL = 218;
     public static final int IS_PARTICIPANT_LIVE_ON_CHAT_CALL = 219;
+    public static final int GET_MY_INTERCONNECTIONS_LIST_CALL = 220;
+    public static final int GET_USERS_BY_ID_LIST_CALL = 221;
+    public static final int GET_LAST_CHAT_ITEM_CALL = 222;
+    public static final int GET_UNSEEN_CHATS_COUNT_CALL = 223;
+
 
 
     //---- ERROR MESSAGES ----//

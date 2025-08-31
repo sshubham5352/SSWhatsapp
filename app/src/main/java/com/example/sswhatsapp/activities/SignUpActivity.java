@@ -21,7 +21,7 @@ import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
 import com.example.sswhatsapp.firebase.RealtimeDbManager;
 import com.example.sswhatsapp.firebase.RealtimeDbNetworkCallListener;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
 import com.example.sswhatsapp.utils.SessionManager;

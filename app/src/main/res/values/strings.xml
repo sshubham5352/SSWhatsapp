@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SS WhatsApp</string>
+    <string name="app_name">ChitChat</string>
     <string name="makes_screen_scrollable">makes screen scrollable</string>
     <string name="email_id">Email Id</string>
     <string name="password">Password</string>
@@ -25,10 +25,10 @@
     <string name="select_contact">Select Contact</string>
     <string name="_0_contacts">0 contacts</string>
     <string name="please_allow_contacts_permission">Please allow contacts permission\nto start chatting</string>
-    <string name="contacts_on_ss_whatsapp">Contacts on SS Whatsapp</string>
+    <string name="contacts_on_chitchat">Contacts on ChitChat</string>
     <string name="tagline">Tagline</string>
     <string name="na">N/A</string>
-    <string name="contacts_yet_to_come_on_ss_whatsapp">Contacts yet to come on SS Whatsapp</string>
+    <string name="contacts_yet_to_come_on_chitchat">Contacts yet to come on ChitChat</string>
     <string name="invite">Invite</string>
     <string name="no_of_contacts">%1$d contacts</string>
     <string name="online">online</string>
@@ -41,6 +41,10 @@
     <string name="you_hi_how_are_you">You: Hi How are you?</string>
     <string name="status_online">Online</string>
     <string name="status_typing">Typing…</string>
+    <string name="user_name">User Name</string>
+    <string name="time_stamp">time stamp</string>
+    <string name="ninety_nine_plus">99+</string>
+
     <!--  Arrays  -->
     <string-array name="genders">
         <item>male</item>

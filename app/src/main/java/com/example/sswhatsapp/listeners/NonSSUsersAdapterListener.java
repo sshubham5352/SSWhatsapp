@@ -2,6 +2,6 @@ package com.example.sswhatsapp.listeners;
 
 import com.example.sswhatsapp.models.UserDeviceContact;
 
-public interface NonSSUsersListListener {
+public interface NonSSUsersAdapterListener {
     void onNonSSUserClick(UserDeviceContact user);
 }

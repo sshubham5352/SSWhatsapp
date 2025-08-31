@@ -63,9 +63,9 @@
 
             <View
                 android:id="@+id/msg_read_status"
-                android:layout_width="@dimen/size_chat_tick_icon"
-                android:layout_height="@dimen/size_chat_tick_icon"
-                android:background="@drawable/img_msg_loading_icon"
+                android:layout_width="@dimen/size_chat_status_icon"
+                android:layout_height="@dimen/size_chat_status_icon"
+                android:background="@drawable/img_chat_loading_icon"
                 app:layout_constraintBottom_toBottomOf="@id/chat_time_stamp"
                 app:layout_constraintEnd_toEndOf="parent" />
 

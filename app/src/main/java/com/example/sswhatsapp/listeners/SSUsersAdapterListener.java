@@ -1,8 +1,8 @@
 package com.example.sswhatsapp.listeners;
 
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 
-public interface SSUsersListListener {
+public interface SSUsersAdapterListener {
     void onSSUserClick(UserDetailsResponse user);
 
     void onSSUsersListCompletelyShown();

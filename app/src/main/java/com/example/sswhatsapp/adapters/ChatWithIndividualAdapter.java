@@ -16,8 +16,9 @@ import com.example.sswhatsapp.databinding.ItemRvChatDateBannerBinding;
 import com.example.sswhatsapp.databinding.ItemRvChatMsgReceivedBinding;
 import com.example.sswhatsapp.databinding.ItemRvChatMsgSentBinding;
 import com.example.sswhatsapp.listeners.ChatWithIndividualAdapterListener;
-import com.example.sswhatsapp.models.ChatItemResponse;
+import com.example.sswhatsapp.models.responses.ChatItemResponse;
 import com.example.sswhatsapp.utils.Constants;
+import com.example.sswhatsapp.utils.Helper;
 import com.example.sswhatsapp.utils.TimeHandler;
 
 import java.util.List;
@@ -28,7 +29,6 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
     static int SPACE_BETWEEN_CHATS = 30;
     Context mContext;
     ChatWithIndividualAdapterListener mListener;
-    LayoutInflater inflater;
     List<ChatItemResponse> mChatsList;
     String mUserId;
     int loadedViewCount;
@@ -39,7 +39,6 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
         mListener = listener;
         this.mChatsList = chatList;
         mUserId = userId;
-        inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
 
@@ -101,7 +100,7 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
             case Constants.LAYOUT_TYPE_CHAT_MSG_SENT: {
                 ChatMsgSentHolder msgSentHolder = (ChatMsgSentHolder) holder;
                 msgSentHolder.setBackground(getItemViewType(position - 1));
-                msgSentHolder.binding.msgReadStatus.setBackgroundResource(getChatStatusDrawable(chatItem.getChatStatus()));
+                msgSentHolder.binding.msgReadStatus.setBackgroundResource(Helper.getChatStatusDrawable(chatItem.getChatStatus()));
                 msgSentHolder.binding.chatTimeStamp.setText(TimeHandler.getChatTimeStamp(chatItem.getTimeStamp()));
                 msgSentHolder.binding.message.setText(chatItem.getMessage());
                 break;
@@ -117,24 +116,8 @@ public class ChatWithIndividualAdapter extends RecyclerView.Adapter {
 
         //CALL FOR CONTROLLER
         if (position == 0) {
-            mListener.fetchPreviousChats();
+            mListener.getPreviousChats();
         }
-    }
-
-    private int getChatStatusDrawable(int chatStatus) {
-        switch (chatStatus) {
-            case Constants.CHAT_STATUS_PENDING:
-                return R.drawable.img_msg_loading_icon;
-            case Constants.CHAT_STATUS_SENT:
-                return R.drawable.img_single_tick_white;
-            case Constants.CHAT_STATUS_RECEIVED:
-                return R.drawable.img_double_tick_white;
-            case Constants.CHAT_STATUS_READ:
-                return R.drawable.img_double_tick_green;
-            case Constants.CHAT_STATUS_HALTED:
-                return R.drawable.img_red_cross;
-        }
-        return R.drawable.img_msg_loading_icon;
     }
 
     private void setFadeInAnimation(View view) {

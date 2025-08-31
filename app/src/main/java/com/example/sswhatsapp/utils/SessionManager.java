@@ -6,7 +6,7 @@ import android.content.SharedPreferences;
 
 import com.example.sswhatsapp.activities.SignUpActivity;
 import com.example.sswhatsapp.firebase.FirebaseClients;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 
 public class SessionManager {
 

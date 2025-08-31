@@ -45,6 +45,7 @@
     <dimen name="space_between_chats_small">1dp</dimen>
 
     <dimen name="space_between_rv_user_items">26dp</dimen>
+    <dimen name="space_between_rv_interconnection_items">30dp</dimen>
 
     <!--    Curves (dp)  -->
     <dimen name="corner_radius_standard_Edittext">28dp</dimen>
@@ -85,7 +86,7 @@
     <dimen name="size_chat_edittext">18sp</dimen>
     <dimen name="size_msg_chat">16sp</dimen>
     <dimen name="size_time_stamp">11sp</dimen>
-    <dimen name="size_time_stamp_large">14sp</dimen>
+    <dimen name="size_time_stamp_large">12sp</dimen>
 
     <!--    View Size (sp)    -->
     <dimen name="size_max_chat_edittext">180dp</dimen>
@@ -98,9 +99,10 @@
 
     <dimen name="size_chat_icon">48dp</dimen>
     <dimen name="size_chat_icon_small">22dp</dimen>
-    <dimen name="size_chat_tick_icon">16dp</dimen>
-    <dimen name="size_chat_tick_icon_large">18dp</dimen>
+    <dimen name="size_chat_status_icon">16dp</dimen>
+    <dimen name="size_chat_status_icon_large">18dp</dimen>
     <dimen name="size_chat_like_icon">10dp</dimen>
+    <dimen name="size_unseen_chats_icon">24dp</dimen>
 
 
     <!--    Image Size (dp)    -->
@@ -111,7 +113,7 @@
 
     <!--    Lottie Anim Size (dp)    -->
     <dimen name="size_standard_lottie_anim">150dp</dimen>
-    <dimen name="size_app_logo_lottie_anim">140dp</dimen>
+    <dimen name="size_app_logo_lottie_anim">160dp</dimen>
     <dimen name="size_chat_loading_lottie_anim">40dp</dimen>
 
 

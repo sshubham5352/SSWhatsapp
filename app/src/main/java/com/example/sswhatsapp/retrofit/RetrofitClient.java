@@ -9,11 +9,11 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
-import retrofit2.converter.scalars.ScalarsConverterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
     //static fields
-    public static final String baseURL = "https://fcm.googleapis.com/fcm/";
+    public static final String baseURL = "https://fcm.googleapis.com/";
     public static Retrofit retrofit = null;
 
     private RetrofitClient() {
@@ -25,7 +25,7 @@ public class RetrofitClient {
             retrofit = new Retrofit.Builder()
                     .baseUrl(baseURL)
                     .client(getRequestHeader())
-                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create())
                     .build();
         }
         return retrofit;

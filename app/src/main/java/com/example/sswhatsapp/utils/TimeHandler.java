@@ -7,65 +7,79 @@ import java.util.Locale;
 
 public class TimeHandler {
     public static final String STANDARD_TIME_STAMP_PATTERN = "yyyy_MM_dd_HH_mm_ss.SS";
-    public static final String CHAT_TIME_STAMP_PATTERN = "h:mm aa";
-    public static final String DATE_BANNER_TIME_STAMP_PATTERN = "d MMMM yyyy";
     public static final String COMPARE_DATE_PATTERN = "yyyy_MM_dd";
     public static final String COMPARE_HOUR_PATTERN = "HH";
     public static final String COMPARE_MINUTE_PATTERN = "mm";
+    public static final String DATE_BANNER_TIME_STAMP_PATTERN = "d MMMM yyyy";
+    public static final String CHAT_TIME_STAMP_PATTERN = "h:mm a";
+    public static final String SLASH_DATE_PATTERN = "dd/MM/yy";
     public static final String FULL_DAY_NAME_PATTERN = "EEEE";
     private static SimpleDateFormat standardTimeStampFormat;
-    private static SimpleDateFormat chatTimeStampFormat;
-    private static SimpleDateFormat dateBannerTimeStampFormat;
     private static SimpleDateFormat compareDateFormat;
     private static SimpleDateFormat compareHourFormat;
     private static SimpleDateFormat compareMinuteFormat;
+    private static SimpleDateFormat dateBannerTimeStampFormat;
+    private static SimpleDateFormat chatTimeStampFormat;
+    private static SimpleDateFormat slashDateFormat;
     private static SimpleDateFormat fullDayNameFormat;
 
 
-    //GETTERS
-
-
+    //GETTER
     public static SimpleDateFormat getStandardTimeStampFormat() {
         if (standardTimeStampFormat == null)
             standardTimeStampFormat = new SimpleDateFormat(STANDARD_TIME_STAMP_PATTERN, Locale.US);
         return standardTimeStampFormat;
     }
 
-    public static SimpleDateFormat getChatTimeStampFormat() {
-        if (chatTimeStampFormat == null)
-            chatTimeStampFormat = new SimpleDateFormat(CHAT_TIME_STAMP_PATTERN, Locale.US);
-        return chatTimeStampFormat;
-    }
-
-    public static SimpleDateFormat getDateBannerTimeStampFormat() {
-        if (dateBannerTimeStampFormat == null)
-            dateBannerTimeStampFormat = new SimpleDateFormat(DATE_BANNER_TIME_STAMP_PATTERN, Locale.US);
-        return dateBannerTimeStampFormat;
-    }
-
+    //GETTER
     public static SimpleDateFormat getCompareDateFormat() {
         if (compareDateFormat == null)
             compareDateFormat = new SimpleDateFormat(COMPARE_DATE_PATTERN, Locale.US);
         return compareDateFormat;
     }
 
+    //GETTER
     public static SimpleDateFormat getCompareHourFormat() {
         if (compareHourFormat == null)
             compareHourFormat = new SimpleDateFormat(COMPARE_HOUR_PATTERN, Locale.US);
         return compareHourFormat;
     }
 
+    //GETTER
     public static SimpleDateFormat getCompareMinuteFormat() {
         if (compareMinuteFormat == null)
             compareMinuteFormat = new SimpleDateFormat(COMPARE_MINUTE_PATTERN, Locale.US);
         return compareMinuteFormat;
     }
 
+    //GETTER
+    public static SimpleDateFormat getDateBannerTimeStampFormat() {
+        if (dateBannerTimeStampFormat == null)
+            dateBannerTimeStampFormat = new SimpleDateFormat(DATE_BANNER_TIME_STAMP_PATTERN, Locale.US);
+        return dateBannerTimeStampFormat;
+    }
+
+    //GETTER
+    public static SimpleDateFormat getChatTimeStampFormat() {
+        if (chatTimeStampFormat == null)
+            chatTimeStampFormat = new SimpleDateFormat(CHAT_TIME_STAMP_PATTERN, Locale.UK);
+        return chatTimeStampFormat;
+    }
+
+    //GETTER
+    public static SimpleDateFormat getSlashDateFormat() {
+        if (slashDateFormat == null)
+            slashDateFormat = new SimpleDateFormat(SLASH_DATE_PATTERN, Locale.US);
+        return slashDateFormat;
+    }
+
+    //GETTER
     public static SimpleDateFormat getFullDayNameFormat() {
         if (fullDayNameFormat == null)
             fullDayNameFormat = new SimpleDateFormat(FULL_DAY_NAME_PATTERN, Locale.US);
         return fullDayNameFormat;
     }
+
 
     public static Date getCurrentDate() {
         return new Date();
@@ -85,25 +99,15 @@ public class TimeHandler {
         return ImageDateFormat.format(new Date());
     }
 
-    public static String getChatTimeStamp(String standardTimeStamp) {
-        //timeStamp given in parameter should be in StandardTimeFormat
-        String res;
-        try {
-            res = getChatTimeStampFormat().format(getStandardTimeStampFormat().parse(standardTimeStamp));
-        } catch (ParseException e) {
-            res = standardTimeStamp;
-        }
-        return res;
-    }
-
     public static String getChatBannerTimeStamp(String standardTimeStamp) {
         //timeStamp given in parameter should be in StandardTimeFormat
         /*
          * IF TODAY'S DATE THEN RETURNS today
          * IF YESTERDAY'S DATE THEN RETURNS yesterday
          * IF DATE LIES WITHIN THE 7 DAYS OF THE CURRENT WEEK THEN RETURNS day name
-         * ELSE RETURNS DATE DATE_BANNER_FORMAT
+         * ELSE RETURNS DATE SLASH_DATE_FORMAT(dd/MM/yy)
          **/
+
         if (isThisToday(standardTimeStamp)) {
             return "Today";
         }
@@ -125,7 +129,18 @@ public class TimeHandler {
         return standardTimeStamp;
     }
 
-    public static String getLastOnlineMsg(long timeMillis) {
+    public static String getChatTimeStamp(String standardTimeStamp) {
+        //timeStamp given in parameter should be in StandardTimeFormat
+        String res;
+        try {
+            res = getChatTimeStampFormat().format(getStandardTimeStampFormat().parse(standardTimeStamp));
+        } catch (ParseException e) {
+            res = standardTimeStamp;
+        }
+        return res;
+    }
+
+    public static String getLastSeenTimeStamp(long timeMillis) {
         /*
          * IF SENT TODAY THEN RETURN HOUR OR MINUTE DIFFERENCE FROM CURRENT TIME
          * IF YESTERDAY'S DATE THEN RETURNS "yesterday"
@@ -148,6 +163,26 @@ public class TimeHandler {
         }
     }
 
+    public static String getInterconnectionItemTimeStamp(String standardTimeStamp) {
+        //timeStamp given in parameter should be in StandardTimeFormat
+        /*
+         * IF TODAY'S DATE THEN RETURNS ChatTimeFormat(h:mm aa)
+         * IF YESTERDAY'S DATE THEN RETURNS yesterday
+         * ELSE RETURNS DATE SLASH_DATE_FORMAT(
+         **/
+        try {
+            if (isThisToday(standardTimeStamp)) {
+                return getChatTimeStampFormat().format(getStandardTimeStampFormat().parse(standardTimeStamp));
+            }
+            if (isThisYesterday(standardTimeStamp)) {
+                return "Yesterday";
+            }
+            return getSlashDateFormat().format(getStandardTimeStampFormat().parse(standardTimeStamp));
+
+        } catch (ParseException e) {
+            return standardTimeStamp;
+        }
+    }
 
     public static boolean isThisToday(String standardTimeStamp) {
         //standardTimeStamp given in parameter should be in StandardTimeFormat

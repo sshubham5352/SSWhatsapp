@@ -4,15 +4,18 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.net.Uri;
 
-import com.example.sswhatsapp.models.ChatItemResponse;
-import com.example.sswhatsapp.models.InterConnection;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.models.MyInterconnectionRvItem;
+import com.example.sswhatsapp.models.responses.ChatItemResponse;
+import com.example.sswhatsapp.models.responses.InterConnectionResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 import com.example.sswhatsapp.notificatons.ChatNotificationsManager;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.FirestoreHelper;
 import com.example.sswhatsapp.utils.Helper;
 import com.example.sswhatsapp.utils.SessionManager;
 import com.example.sswhatsapp.utils.TimeHandler;
+import com.google.firebase.firestore.AggregateQuery;
+import com.google.firebase.firestore.AggregateSource;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -20,7 +23,6 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.Filter;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.MetadataChanges;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
@@ -28,8 +30,8 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class FirestoreManager {
     private final FirebaseFirestore firestoreDb;
@@ -61,39 +63,38 @@ public class FirestoreManager {
     }
 
     //SETTING LISTENER
-    public ListenerRegistration setIndividualConnectionListener(String connectionId, EventListener<QuerySnapshot> listener, String lastReceivedChatTimeStamp) {
-        ListenerRegistration listenerRegistration =
-                firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
-                        .document(connectionId)
-                        .collection(FirebaseConstants.COLLECTION_CHATS)
-                        .whereGreaterThan(FirebaseConstants.KEY_TIME_STAMP, lastReceivedChatTimeStamp)
-                        .addSnapshotListener(MetadataChanges.INCLUDE, listener);
-        return listenerRegistration;
-
+    public ListenerRegistration addIndividualChatConnectionListener(String connectionId, EventListener<QuerySnapshot> listener, String lastReceivedChatTimeStamp) {
+        return firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_CHATS)
+                .whereGreaterThanOrEqualTo(FirebaseConstants.KEY_TIME_STAMP, lastReceivedChatTimeStamp)
+                .addSnapshotListener(listener);
     }
 
     //SETTING LISTENER
-    public ListenerRegistration setConnectionParticipantListener(String connectionId, String participantId, EventListener<QuerySnapshot> listener) {
-        ListenerRegistration listenerRegistration =
-                firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
-                        .document(connectionId)
-                        .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
-                        .whereEqualTo(FirebaseConstants.KEY_USER_ID, participantId)
-                        .addSnapshotListener(listener);
-        return listenerRegistration;
+    public ListenerRegistration addConnectionParticipantListener(String connectionId, String participantId, EventListener<QuerySnapshot> listener) {
+        return firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
+                .whereEqualTo(FirebaseConstants.KEY_USER_ID, participantId)
+                .addSnapshotListener(listener);
     }
 
     //SETTING LISTENER
-    public ListenerRegistration setUserDocListener(String userId, EventListener<DocumentSnapshot> listener) {
-        ListenerRegistration listenerRegistration =
-                firestoreDb.collection(FirebaseConstants.COLLECTION_USERS)
-                        .document(userId)
-                        .addSnapshotListener(listener);
-        return listenerRegistration;
+    public ListenerRegistration addUserDocListener(String userId, EventListener<DocumentSnapshot> listener) {
+        return firestoreDb.collection(FirebaseConstants.COLLECTION_USERS)
+                .document(userId)
+                .addSnapshotListener(listener);
     }
 
-    //ON DISCONNECT CALL
-    public void setOnDisconnectAction(String userId) {
+    //SETTING LISTENER
+    public ListenerRegistration addMyInterconnectionsListener(String interconnectionId, EventListener<QuerySnapshot> listener, String lastDocModifiedAt) {
+        return firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                .document(interconnectionId)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
+                .whereEqualTo(FirebaseConstants.KEY_IS_ERADICATED, false)
+                .whereGreaterThan(FirebaseConstants.KEY_MODIFIED_AT, lastDocModifiedAt)
+                .addSnapshotListener(listener);
     }
 
     public void getFCMToken() {
@@ -257,22 +258,32 @@ public class FirestoreManager {
     }
 
     public void getUserById(String userId) {
-        CollectionReference usersFolderRef = firestoreDb.collection(FirebaseConstants.COLLECTION_USERS);
-        Query query = usersFolderRef.whereEqualTo(FirebaseConstants.KEY_USER_ID, userId);
-        query.get()
+        firestoreDb
+                .collection(FirebaseConstants.COLLECTION_USERS)
+                .document(userId)
+                .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_USER_BY_MOBILE_NO_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_USER_BY_ID_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                     }
-                    if ((--noOfCallsInProgress) == 0)
-                        progressDialog.dismiss();
-                }).addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
-                    if ((--noOfCallsInProgress) == 0)
-                        progressDialog.dismiss();
-                });
+                })
+                .addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR));
+    }
+
+    public void getUsersById(List<String> userIdsList) {
+        CollectionReference usersFolderRef = firestoreDb.collection(FirebaseConstants.COLLECTION_USERS);
+        Query query = usersFolderRef.whereIn(FirebaseConstants.KEY_USER_ID, userIdsList);
+
+        query.get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_USERS_BY_ID_LIST_CALL);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                }).addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR));
     }
 
     public void getUserByMobileNo(String mobileNo) {
@@ -414,7 +425,7 @@ public class FirestoreManager {
         queriesBatch.commit()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        InterConnection connectionRef = new InterConnection(connectionId, connectionWith, true);
+                        InterConnectionResponse connectionRef = new InterConnectionResponse(connectionId, connectionWith, true, TimeHandler.getCurrentTimeStamp());
                         mListener.onFirestoreNetworkCallSuccess(connectionRef, FirebaseConstants.CREATE_NEW_CONNECTION_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(connectionId, FirebaseConstants.CREATE_NEW_CONNECTION_CALL);
@@ -424,6 +435,36 @@ public class FirestoreManager {
                 }).addOnFailureListener(e ->
                 {
                     mListener.onFirestoreNetworkCallFailure(connectionId, FirebaseConstants.CREATE_NEW_CONNECTION_CALL);
+                    if ((--noOfCallsInProgress) == 0)
+                        progressDialog.dismiss();
+                });
+    }
+
+    public void createMyInterconnection(String myInterconnectionsDocId, InterConnectionResponse myInterconnection) {
+        progressDialog.setMessage("Please wait...");
+        noOfCallsInProgress++;
+        progressDialog.show();
+
+        HashMap<String, Object> doc = new HashMap<>();
+        doc.put(FirebaseConstants.KEY_CONNECTION_ID, myInterconnection.getConnectionId());
+        doc.put(FirebaseConstants.KEY_CONNECTION_WITH, myInterconnection.getConnectionWith());
+        doc.put(FirebaseConstants.KEY_IS_ERADICATED, myInterconnection.isEradicated());
+        doc.put(FirebaseConstants.KEY_MODIFIED_AT, myInterconnection.getModifiedAt());
+
+        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+                .document(myInterconnectionsDocId)
+                .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
+                .add(doc)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        mListener.onFirestoreNetworkCallSuccess(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
+                    }
+                    if ((--noOfCallsInProgress) == 0)
+                        progressDialog.dismiss();
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
                     if ((--noOfCallsInProgress) == 0)
                         progressDialog.dismiss();
                 });
@@ -455,36 +496,43 @@ public class FirestoreManager {
                 });
     }
 
-    public void createMyInterconnection(String myInterconnectionsDocId, InterConnection myInterconnection) {
-        progressDialog.setMessage("Please wait...");
-        noOfCallsInProgress++;
-        progressDialog.show();
-
-        HashMap<String, Object> doc = new HashMap<>();
-        doc.put(FirebaseConstants.KEY_CONNECTION_ID, myInterconnection.getConnectionId());
-        doc.put(FirebaseConstants.KEY_CONNECTION_WITH, myInterconnection.getConnectionWith());
-        doc.put(FirebaseConstants.KEY_IS_ERADICATED, myInterconnection.isEradicated());
-
-        firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
+    public void getMyInterconnectionsList(String myInterconnectionsDocId, boolean showProgressDialogue) {
+        if (showProgressDialogue) {
+            progressDialog.setMessage("Please wait...");
+            noOfCallsInProgress++;
+            progressDialog.show();
+        }
+        Query query = firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
                 .document(myInterconnectionsDocId)
                 .collection(FirebaseConstants.COLLECTION_MY_INTERCONNECTIONS)
-                .add(doc)
+                .whereEqualTo(FirebaseConstants.KEY_IS_ERADICATED, false);
+
+        query.get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_MY_INTERCONNECTIONS_LIST_CALL);
                     } else {
-                        mListener.onFirestoreNetworkCallFailure(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR, FirebaseConstants.GET_MY_INTERCONNECTIONS_LIST_CALL);
                     }
-                    if ((--noOfCallsInProgress) == 0)
-                        progressDialog.dismiss();
+
+                    if (showProgressDialogue) {
+                        noOfCallsInProgress--;
+                        if (noOfCallsInProgress == 0) {
+                            progressDialog.dismiss();
+                        }
+                    }
                 }).addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(myInterconnection, FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL);
-                    if ((--noOfCallsInProgress) == 0)
-                        progressDialog.dismiss();
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + e, FirebaseConstants.GET_MY_INTERCONNECTIONS_LIST_CALL);
+                    if (showProgressDialogue) {
+                        noOfCallsInProgress--;
+                        if (noOfCallsInProgress == 0) {
+                            progressDialog.dismiss();
+                        }
+                    }
                 });
     }
 
-    public void createReceiversInterconnection(String connectionsListRef, InterConnection receiverInterconnection) {
+    public void createReceiversInterconnection(String connectionsListRef, InterConnectionResponse receiverInterconnection) {
         progressDialog.setMessage("Please wait...");
         noOfCallsInProgress++;
         progressDialog.show();
@@ -493,6 +541,7 @@ public class FirestoreManager {
         doc.put(FirebaseConstants.KEY_CONNECTION_ID, receiverInterconnection.getConnectionId());
         doc.put(FirebaseConstants.KEY_CONNECTION_WITH, receiverInterconnection.getConnectionWith());
         doc.put(FirebaseConstants.KEY_IS_ERADICATED, receiverInterconnection.isEradicated());
+        doc.put(FirebaseConstants.KEY_MODIFIED_AT, receiverInterconnection.getModifiedAt());
 
         firestoreDb.collection(FirebaseConstants.COLLECTION_USER_INTERCONNECTIONS)
                 .document(connectionsListRef)
@@ -562,11 +611,13 @@ public class FirestoreManager {
         String chatId = firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
                 .document(connectionId)
                 .collection(FirebaseConstants.COLLECTION_CHATS)
-                .document().getId();
+                .document()
+                .getId();
         chatItem.setChatId(chatId);
 
         HashMap<String, Object> doc = new HashMap<>();
         doc.put(FirebaseConstants.KEY_CHAT_ID, chatId);
+        doc.put(FirebaseConstants.KEY_CONNECTION_ID, chatItem.getConnectionId());
         doc.put(FirebaseConstants.KEY_CHAT_CATEGORY, chatItem.getChatCategory());
         doc.put(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_SENT);
         doc.put(FirebaseConstants.KEY_SENDER_ID, chatItem.getSenderId());
@@ -593,32 +644,32 @@ public class FirestoreManager {
                 });
     }
 
-    public void fetchChatItems(String connectionId, String myUserId, int limit) {
+    public void getChatItems(String connectionId, String myUserId, int limit) {
         CollectionReference chatsCollection = firestoreDb
                 .collection(FirebaseConstants.COLLECTION_CONNECTIONS)
                 .document(connectionId)
                 .collection(FirebaseConstants.COLLECTION_CHATS);
 
-        Query query = chatsCollection.where(Filter.or(
-                Filter.and(Filter.equalTo(FirebaseConstants.KEY_SENDER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_SENDER, false)),
-                Filter.and(Filter.equalTo(FirebaseConstants.KEY_RECEIVER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER, false))
-        )).orderBy(FirebaseConstants.KEY_TIME_STAMP, Query.Direction.DESCENDING);
+        Query query = chatsCollection
+                .where(Filter.or(
+                        Filter.and(Filter.equalTo(FirebaseConstants.KEY_SENDER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_SENDER, false)),
+                        Filter.and(Filter.equalTo(FirebaseConstants.KEY_RECEIVER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER, false))
+                ))
+                .orderBy(FirebaseConstants.KEY_TIME_STAMP, Query.Direction.DESCENDING)
+                .limit(limit);
 
-        query.limit(limit)
-                .get()
+        query.get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.FETCH_PREVIOUS_CHATS_CALL);
+                        mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_PREVIOUS_CHATS_CALL);
                     } else {
                         mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                     }
-                }).addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
-                });
+                }).addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR));
 
     }
 
-    public void fetchChatItems(String connectionId, String myUserId, String startAfterDocId, int limit) {
+    public void getChatItems(String connectionId, String myUserId, String startAfterDocId, int limit) {
         firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
                 .document(connectionId)
                 .collection(FirebaseConstants.COLLECTION_CHATS)
@@ -634,28 +685,86 @@ public class FirestoreManager {
                             .document(connectionId)
                             .collection(FirebaseConstants.COLLECTION_CHATS);
 
-                    Query query = chatsCollection.where(Filter.or(
-                            Filter.and(Filter.equalTo(FirebaseConstants.KEY_SENDER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_SENDER, false)),
-                            Filter.and(Filter.equalTo(FirebaseConstants.KEY_RECEIVER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER, false))
-                    )).orderBy(FirebaseConstants.KEY_TIME_STAMP, Query.Direction.DESCENDING);
+                    Query query = chatsCollection
+                            .where(Filter.or(
+                                    Filter.and(Filter.equalTo(FirebaseConstants.KEY_SENDER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_SENDER, false)),
+                                    Filter.and(Filter.equalTo(FirebaseConstants.KEY_RECEIVER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER, false))
+                            ))
+                            .orderBy(FirebaseConstants.KEY_TIME_STAMP, Query.Direction.DESCENDING)
+                            .startAfter(task1.getResult())
+                            .limit(limit);
 
-                    query.startAfter(task1.getResult())
-                            .limit(limit)
-                            .get()
+                    query.get()
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
-                                    mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.FETCH_PREVIOUS_CHATS_CALL);
+                                    mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_PREVIOUS_CHATS_CALL);
                                 } else {
-                                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR, FirebaseConstants.FETCH_PREVIOUS_CHATS_CALL);
+                                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR, FirebaseConstants.GET_PREVIOUS_CHATS_CALL);
                                 }
                             }).addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR));
                 })
-                .addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR, FirebaseConstants.FETCH_PREVIOUS_CHATS_CALL);
-                });
+                .addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR, FirebaseConstants.GET_PREVIOUS_CHATS_CALL));
 
     }
 
+    public void getLastChatItem(String connectionId, String myUserId) {
+        CollectionReference chatsCollection = firestoreDb
+                .collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_CHATS);
+
+        Query query = chatsCollection
+                .where(Filter.or(
+                        Filter.and(Filter.equalTo(FirebaseConstants.KEY_SENDER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_SENDER, false)),
+                        Filter.and(Filter.equalTo(FirebaseConstants.KEY_RECEIVER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER, false))
+                ))
+                .orderBy(FirebaseConstants.KEY_TIME_STAMP, Query.Direction.DESCENDING)
+                .limit(1);
+
+        query.get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        if (!task.getResult().isEmpty()) {
+                            mListener.onFirestoreNetworkCallSuccess(task.getResult(), FirebaseConstants.GET_LAST_CHAT_ITEM_CALL);
+                        }
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + e);
+                });
+    }
+
+    public void getLastChatItemOfConnectionsLists(List<String> connectionIdList) {
+
+    }
+
+    public void getUnseenChatsCount(String connectionId, String myUserId) {
+        CollectionReference chatsCollection = firestoreDb
+                .collection(FirebaseConstants.COLLECTION_CONNECTIONS)
+                .document(connectionId)
+                .collection(FirebaseConstants.COLLECTION_CHATS);
+
+        AggregateQuery query = chatsCollection
+                .whereNotEqualTo(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_READ)
+                .where(Filter.or(
+                        Filter.and(Filter.equalTo(FirebaseConstants.KEY_RECEIVER_ID, myUserId), Filter.equalTo(FirebaseConstants.KEY_IS_DELETED_BY_RECEIVER, false))
+                ))
+                .orderBy(FirebaseConstants.KEY_TIME_STAMP, Query.Direction.DESCENDING)
+                .count();
+
+        query.get(AggregateSource.SERVER)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        MyInterconnectionRvItem.UnseenChatsCountResponse unseenChatsCountResponse = new MyInterconnectionRvItem.UnseenChatsCountResponse(connectionId, task.getResult().getCount());
+                        mListener.onFirestoreNetworkCallSuccess(unseenChatsCountResponse, FirebaseConstants.GET_UNSEEN_CHATS_COUNT_CALL);
+                    } else {
+                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
+                    }
+                }).addOnFailureListener(e -> {
+                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + e);
+                });
+    }
 
     public void updateMyIsEradicatedField(String myInterconnectionsDocId, String connectionWith,
                                           boolean isEradicated) {
@@ -735,8 +844,10 @@ public class FirestoreManager {
                 .update(FirebaseConstants.KEY_CHAT_STATUS, newChatStatus);
     }
 
-    public void updateChatsStatus(int newChatStatus, ArrayList<String> chatIdsList, String
-            connectionId, String senderId) {
+    public void updateChatsStatus(int newChatStatus, List<String> chatIdsList, String connectionId, String senderId) {
+        /*
+         * NOTE: {@param (senderId) is specifically for call from NotificationManger otherwise it can be null}
+         * */
         WriteBatch queriesBatch = firestoreDb.batch();
 
         for (String chatId : chatIdsList) {
@@ -760,32 +871,8 @@ public class FirestoreManager {
                 .addOnFailureListener(e -> mListener.onFirestoreNetworkCallFailure(connectionId, FirebaseConstants.UPDATE_CHATS_STATUS_CALL));
     }
 
-    public void updateAllChatsStatusAsRead(String receiverId, String connectionId) {
-        firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
-                .document(connectionId)
-                .collection(FirebaseConstants.COLLECTION_CHATS)
-                .whereEqualTo(FirebaseConstants.KEY_RECEIVER_ID, receiverId)
-                .whereNotEqualTo(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_READ)
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        for (DocumentSnapshot doc : task.getResult().getDocuments()) {
-                            firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
-                                    .document(connectionId)
-                                    .collection(FirebaseConstants.COLLECTION_CHATS)
-                                    .document(doc.getId())
-                                    .update(FirebaseConstants.KEY_CHAT_STATUS, Constants.CHAT_STATUS_READ);
-                        }
-                    } else {
-                        mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
-                    }
-                }).addOnFailureListener(e -> {
-                    mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
-                });
-    }
 
-    public void updateParticipantTypingStatus(boolean isTyping, String docId, String
-            connectionId) {
+    public void updateParticipantTypingStatus(boolean isTyping, String docId, String connectionId) {
         firestoreDb.collection(FirebaseConstants.COLLECTION_CONNECTIONS)
                 .document(connectionId)
                 .collection(FirebaseConstants.COLLECTION_PARTICIPANTS)
@@ -821,7 +908,5 @@ public class FirestoreManager {
                 }).addOnFailureListener(e -> {
                     mListener.onFirestoreNetworkCallFailure(FirebaseConstants.NETWORK_CALL_FAILURE + FirebaseConstants.GENERAL_ERROR);
                 });
-
-
     }
 }

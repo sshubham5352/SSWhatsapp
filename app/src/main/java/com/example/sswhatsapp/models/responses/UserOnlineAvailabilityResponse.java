@@ -1,4 +1,4 @@
-package com.example.sswhatsapp.models;
+package com.example.sswhatsapp.models.responses;
 
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.google.firebase.database.PropertyName;
@@ -12,6 +12,8 @@ public class UserOnlineAvailabilityResponse {
 
     public UserOnlineAvailabilityResponse() {
         //empty constructor
+        isOnline = false;
+        lastOnline = 0;
     }
 
     public boolean isOnline() {

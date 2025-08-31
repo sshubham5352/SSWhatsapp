@@ -13,30 +13,27 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.bumptech.glide.Glide;
 import com.example.sswhatsapp.R;
 import com.example.sswhatsapp.adapters.ChatWithIndividualAdapter;
 import com.example.sswhatsapp.daos.ChatWithIndividualDao;
 import com.example.sswhatsapp.databinding.ActivityChatWithIndividualBinding;
 import com.example.sswhatsapp.listeners.ChatWIthIndividualDaoListener;
 import com.example.sswhatsapp.listeners.ChatWithIndividualAdapterListener;
-import com.example.sswhatsapp.models.ChatItemResponse;
-import com.example.sswhatsapp.models.InterConnection;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.models.responses.ChatItemResponse;
+import com.example.sswhatsapp.models.responses.InterConnectionResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 import com.example.sswhatsapp.services.FCMService;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
-import com.example.sswhatsapp.utils.PicassoCache;
 import com.example.sswhatsapp.utils.SessionManager;
 import com.example.sswhatsapp.utils.SoundManager;
-
-import java.util.List;
 
 public class ChatWithIndividualActivity extends AppCompatActivity implements View.OnClickListener, ChatWithIndividualAdapterListener, ChatWIthIndividualDaoListener {
     //fields
     private ActivityChatWithIndividualBinding binding;
     ChatWithIndividualDao chatDao;
     private ChatWithIndividualAdapter chatsAdapter;
-    private List<ChatItemResponse> chatsList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,13 +41,13 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
         binding = DataBindingUtil.setContentView(this, R.layout.activity_chat_with_individual);
         initDao();
         initToolbar();
-        chatsList = chatDao.getChatsList();
         initChatAdapter();
 
         if (!chatDao.isEradicated()) {
             //make call to fetch previous chats
-            fetchPreviousChats();
+            getPreviousChats();
         } else {
+            //as there are no previous chats so the Rv should stack items fromTop
             changeRvStackingOrder(false);
         }
 
@@ -73,13 +70,11 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     @Override
     protected void onResume() {
         super.onResume();
-
         chatDao.updateMyLiveOnChatStatus(true);
         chatDao.attachReceiverDocListener();
-        chatDao.attachChatParticipantListener();
         chatDao.attachChatsCollectionListener();
+        chatDao.attachChatParticipantListener();
         FCMService.clearNotification(chatDao.getReceiverUser().getUserId());
-        chatDao.updateAllChatsStatusAsRead();
     }
 
     @Override
@@ -91,8 +86,17 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     }
 
     void onActivityBackPressed() {
+        Intent intent = new Intent();
+        intent.putExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA, chatDao.getMyInterconnection());
+        setResult(RESULT_OK, intent);
+
+        if (!chatDao.getChatsList().isEmpty()) {
+            intent.putExtra(Constants.INTENT_LAST_CHAT_ITEM_EXTRA, chatDao.getChatsList().get(chatDao.getLastChatItemIndex()));
+        }
+
         if (isTaskRoot()) {
-            Intent intent = new Intent(this, HomeActivity.class);
+            intent.setClass(this, HomeActivity.class);
+            intent.putExtra(Constants.INTENT_COMING_FROM_NOTIFICATION_EXTRA, true);
             startActivity(intent);
         }
         finish();
@@ -101,8 +105,8 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     private void initDao() {
         Intent intent = getIntent();
         UserDetailsResponse receiverUserDetails = (UserDetailsResponse) intent.getSerializableExtra(Constants.INTENT_USER_DETAILS_EXTRA);
-        InterConnection myInterconnection = (InterConnection) intent.getSerializableExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA);
-        InterConnection receiversInterconnection = (InterConnection) intent.getSerializableExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA);
+        InterConnectionResponse myInterconnection = (InterConnectionResponse) intent.getSerializableExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA);
+        InterConnectionResponse receiversInterconnection = (InterConnectionResponse) intent.getSerializableExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA);
 
         if (!SessionManager.isInitiated()) {
             SessionManager.initSessionManager(getApplicationContext());
@@ -116,23 +120,25 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     }
 
     private void initToolbar() {
-        UserDetailsResponse connectionWithUser = chatDao.getReceiverUser();
-        binding.toolbar.setNavigationOnClickListener(view -> finish());
-        if (connectionWithUser.getProfileImgUrl() != null) {
-            PicassoCache.getPicassoInstance(this).load(connectionWithUser.getProfileImgUrl()).
-                    placeholder(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()))
+        UserDetailsResponse receiverUser = chatDao.getReceiverUser();
+        binding.toolbar.setNavigationOnClickListener(view -> onActivityBackPressed());
+        if (receiverUser.getProfileImgUrl() != null) {
+            Glide.with(this)
+                    .load(receiverUser.getProfileImgUrl())
+                    .placeholder(Helper.getProfilePlaceholderImg(this, receiverUser.gender))
+                    .error(Helper.getProfilePlaceholderImg(this, receiverUser.gender))
                     .into(binding.imgUserProfile);
         } else {
-            binding.imgUserProfile.setImageResource(Helper.getProfilePlaceholderImg(this, connectionWithUser.getGender()));
+            binding.imgUserProfile.setImageResource(Helper.getProfilePlaceholderImg(this, receiverUser.getGender()));
         }
-        binding.userName.setText(connectionWithUser.getName());
+        binding.userName.setText(receiverUser.getLocalPhoneName());
     }
 
     private void initChatAdapter() {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         layoutManager.setStackFromEnd(true);
         binding.rvChats.setLayoutManager(layoutManager);
-        chatsAdapter = new ChatWithIndividualAdapter(this, this, chatsList, chatDao.getMyUserId());
+        chatsAdapter = new ChatWithIndividualAdapter(this, this, chatDao.getChatsList(), chatDao.getMyUserId());
         binding.rvChats.setAdapter(chatsAdapter);
 
         binding.rvChats.addItemDecoration(new ChatWithIndividualAdapter.HeaderItemDecoration(this, binding.rvChats, new ChatWithIndividualAdapter.HeaderItemDecoration.StickyHeaderInterface() {
@@ -225,7 +231,7 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     }
 
     private void scrollChatRvToBottom() {
-        binding.rvChats.scrollToPosition(chatsList.size() - 1);
+        binding.rvChats.scrollToPosition(chatDao.getChatsList().size() - 1);
     }
 
     @Override
@@ -237,7 +243,7 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
             if (message.length() != 0) {
                 ChatItemResponse chatItem = chatDao.addMessageChat(message);
                 chatDao.sendMessageChat(chatItem);
-                chatDao.sendNotification(chatItem);
+                chatDao.sendNotificationV1(chatItem);
             }
         } else if (view.getId() == R.id.btn_mic) {
             return;
@@ -332,10 +338,9 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
         ((LinearLayoutManager) binding.rvChats.getLayoutManager()).setStackFromEnd(stackFromEnd);
     }
 
-
     //CALL FROM ADAPTER
     @Override
-    public void fetchPreviousChats() {
+    public void getPreviousChats() {
         if (!chatDao.areAllPreviousChatsFetched()) {
             binding.animChatLoading.playAnimation();
             binding.animChatLoading.setVisibility(View.VISIBLE);
@@ -346,6 +351,7 @@ public class ChatWithIndividualActivity extends AppCompatActivity implements Vie
     @Override
     protected void onDestroy() {
         chatDao.onDestroy();
+        chatDao = null;
         super.onDestroy();
     }
 }

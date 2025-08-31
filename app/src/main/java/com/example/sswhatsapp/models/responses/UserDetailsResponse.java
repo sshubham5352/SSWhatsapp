@@ -1,4 +1,4 @@
-package com.example.sswhatsapp.models;
+package com.example.sswhatsapp.models.responses;
 
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.google.firebase.firestore.PropertyName;
@@ -29,6 +29,9 @@ public class UserDetailsResponse implements Serializable {
     @PropertyName(FirebaseConstants.KEY_MY_INTERCONNECTIONS_DOC_ID)
     public String myInterconnectionsDocId;
 
+    //ADDED FIELDS
+    private String localPhoneName;
+
     //CONSTRUCTOR: for json conversion
     public UserDetailsResponse() {
         /*
@@ -47,7 +50,7 @@ public class UserDetailsResponse implements Serializable {
         this.mobileNo = mobileNo;
         this.profileImgUrl = profileImgUrl;
         this.createdOn = createdOn;
-        this.tagline = "Hey there I'm using SS WhatsApp!";
+        this.tagline = "Hey there I'm using ChitChat!";
     }
 
     //CONSTRUCTOR: for session manager
@@ -115,6 +118,10 @@ public class UserDetailsResponse implements Serializable {
         return myInterconnectionsDocId;
     }
 
+    public String getLocalPhoneName() {
+        return localPhoneName;
+    }
+
     public void setFcmToken(String fcmToken) {
         this.fcmToken = fcmToken;
     }
@@ -153,5 +160,9 @@ public class UserDetailsResponse implements Serializable {
 
     public void setMyInterconnectionsDocId(String myInterconnectionsDocId) {
         this.myInterconnectionsDocId = myInterconnectionsDocId;
+    }
+
+    public void setLocalPhoneName(String localPhoneName) {
+        this.localPhoneName = localPhoneName;
     }
 }

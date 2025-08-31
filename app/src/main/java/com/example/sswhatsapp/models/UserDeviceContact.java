@@ -5,7 +5,8 @@ import java.util.List;
 
 public class UserDeviceContact implements Comparable<UserDeviceContact> {
     //fields
-    private String name, mobileNo;
+    private String name;
+    private String mobileNo;
 
     public UserDeviceContact(String name, String mobileNo) {
         this.name = name;

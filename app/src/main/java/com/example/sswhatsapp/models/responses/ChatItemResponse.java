@@ -1,12 +1,16 @@
-package com.example.sswhatsapp.models;
+package com.example.sswhatsapp.models.responses;
 
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.google.firebase.firestore.PropertyName;
 
+import java.io.Serializable;
 import java.util.Map;
 
-public class ChatItemResponse {
+public class ChatItemResponse implements Serializable {
     //Fields
+    public static final String CHAT_DATE_BANNER_ID = "DBID";
+    @PropertyName(FirebaseConstants.KEY_CONNECTION_ID)
+    public String connectionId;
     @PropertyName(FirebaseConstants.KEY_CHAT_CATEGORY)
     public int chatCategory;
     @PropertyName(FirebaseConstants.KEY_CHAT_STATUS)
@@ -41,35 +45,10 @@ public class ChatItemResponse {
          */
     }
 
-    //CONSTRUCTOR: for new messages
-    public ChatItemResponse(int chatCategory, boolean isStared, boolean isDeletedBySender,
-                            boolean isDeletedByReceiver, int chatStatus, String message,
-                            String timeStamp, String senderId, String receiverId) {
-        this.chatCategory = chatCategory;
-        this.isStared = isStared;
-        this.isDeletedBySender = isDeletedBySender;
-        this.isDeletedByReceiver = isDeletedByReceiver;
-        this.chatStatus = chatStatus;
-        this.message = message;
-        this.timeStamp = timeStamp;
-        this.senderId = senderId;
-        this.receiverId = receiverId;
-    }
-
-    public ChatItemResponse(int chatCategory, int chatStatus, String message, String timeStamp, String senderId, String receiverId) {
-        this.chatCategory = chatCategory;
-        this.isStared = false;
-        this.isDeletedBySender = false;
-        this.isDeletedByReceiver = false;
-        this.chatStatus = chatStatus;
-        this.message = message;
-        this.timeStamp = timeStamp;
-        this.senderId = senderId;
-        this.receiverId = receiverId;
-    }
 
     //CONSTRUCTOR: for chat msg
-    public ChatItemResponse(int chatCategory, int chatStatus, String senderId, String receiverId, String message, String timeStamp, boolean isStared, boolean isDeletedBySender, boolean isDeletedByReceiver) {
+    public ChatItemResponse(String connectionId, int chatCategory, int chatStatus, String senderId, String receiverId, String message, String timeStamp, boolean isStared, boolean isDeletedBySender, boolean isDeletedByReceiver) {
+        this.connectionId = connectionId;
         this.chatCategory = chatCategory;
         this.chatStatus = chatStatus;
         this.senderId = senderId;
@@ -83,7 +62,7 @@ public class ChatItemResponse {
 
     //CONSTRUCTOR: for date banner
     public ChatItemResponse(int chatCategory, String timeStamp, String dateBannerTitle) {
-        chatId = "";
+        chatId = CHAT_DATE_BANNER_ID;
         this.chatCategory = chatCategory;
         this.timeStamp = timeStamp;
         this.dateBannerTitle = dateBannerTitle;
@@ -91,11 +70,16 @@ public class ChatItemResponse {
 
     //CONSTRUCTOR: for FCM service
     public ChatItemResponse(Map<String, String> dataMap) {
+        connectionId = dataMap.get(FirebaseConstants.KEY_CONNECTION_ID);
         chatId = dataMap.get(FirebaseConstants.KEY_CHAT_ID);
         chatCategory = Integer.parseInt(dataMap.get(FirebaseConstants.KEY_CHAT_CATEGORY));
         senderId = dataMap.get(FirebaseConstants.KEY_SENDER_ID);
         receiverId = dataMap.get(FirebaseConstants.KEY_RECEIVER_ID);
         message = dataMap.get(FirebaseConstants.KEY_CHAT_MESSAGE);
+    }
+
+    public String getConnectionId() {
+        return connectionId;
     }
 
     public String getChatId() {

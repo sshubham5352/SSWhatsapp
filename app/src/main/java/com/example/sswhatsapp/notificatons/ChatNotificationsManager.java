@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.provider.Settings;
 import android.util.Log;
@@ -20,15 +21,16 @@ import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
 import androidx.core.graphics.drawable.IconCompat;
 
+import com.bumptech.glide.Glide;
 import com.example.sswhatsapp.R;
 import com.example.sswhatsapp.activities.ChatWithIndividualActivity;
 import com.example.sswhatsapp.broadcastreceivers.NotificationActionsBroadcastReceiver;
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
-import com.example.sswhatsapp.models.ChatItemResponse;
-import com.example.sswhatsapp.models.InterConnection;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.models.responses.ChatItemResponse;
+import com.example.sswhatsapp.models.responses.InterConnectionResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 import com.example.sswhatsapp.providers.ContactsProvider;
 import com.example.sswhatsapp.retrofit.RetrofitConstants;
 import com.example.sswhatsapp.retrofit.RetrofitManager;
@@ -36,7 +38,6 @@ import com.example.sswhatsapp.retrofit.RetrofitNetworkCallListener;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.FirestoreHelper;
 import com.example.sswhatsapp.utils.Helper;
-import com.example.sswhatsapp.utils.PicassoCache;
 import com.example.sswhatsapp.utils.SessionManager;
 import com.example.sswhatsapp.utils.TimeHandler;
 import com.google.firebase.messaging.RemoteMessage;
@@ -46,6 +47,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
 
 public class ChatNotificationsManager implements FirestoreNetworkCallListener, RetrofitNetworkCallListener {
     //STATIC FIELDS
@@ -57,6 +59,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
     private final FirestoreManager firestoreManager;
     private final RetrofitManager retrofitManager;
     HashMap<String, ChatNotificationItem> notificationsList;
+    boolean isReplyingToChatNotification;
     public static int notificationIdTrack = 401;
 
     //CONSTRUCTOR
@@ -67,6 +70,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
         firestoreManager = new FirestoreManager(this);
         retrofitManager = new RetrofitManager(this);
         notificationManager = mContext.getSystemService(NotificationManager.class);
+        isReplyingToChatNotification = false;
 
         initNotificationsChannel();
         initNotificationBuilder();
@@ -87,8 +91,8 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
     private void initNotificationBuilder() {
         notificationBuilder = new NotificationCompat.Builder(mContext, Constants.CHAT_CHANNEL_ID)
                 .setDefaults(Notification.DEFAULT_ALL)
-                .setSmallIcon(R.drawable.app_notification_icon)
-                .setColor(mContext.getColor(R.color.colorAssetGreen))
+                .setSmallIcon(R.drawable.app_icon_2)
+                .setColor(mContext.getColor(R.color.colorBlue))
                 .setSound(Settings.System.DEFAULT_NOTIFICATION_URI)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
@@ -107,7 +111,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
                 new Intent(mContext, NotificationActionsBroadcastReceiver.class)
                         .putExtra(Constants.NOTIFICATION_ACTION_ID, Constants.NOTIFICATION_ACTION_REPLY)
                         .putExtra(FirebaseConstants.KEY_USER_ID, userId),
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
 
         //Pending intent for "mark as read" action to trigger
         PendingIntent markAsReadPendingIntent = PendingIntent.getBroadcast(
@@ -116,7 +120,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
                 new Intent(mContext, NotificationActionsBroadcastReceiver.class)
                         .putExtra(Constants.NOTIFICATION_ACTION_ID, Constants.NOTIFICATION_ACTION_MARK_AS_READ)
                         .putExtra(FirebaseConstants.KEY_USER_ID, userId),
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
 
         NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.drawable.img_chat_icon, "Reply", replyActionPendingIntent)
                 .addRemoteInput(remoteInput)
@@ -158,6 +162,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
+
             //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
@@ -173,7 +178,12 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
         if (!checkNotificationPermission()) {
             return;
         }
-        ChatItemResponse chatItem = new ChatItemResponse(Constants.CHAT_CATEGORY_MSG,
+        isReplyingToChatNotification = true;
+        ChatNotificationItem notificationItem = notificationsList.get(notificationSenderId);
+
+        ChatItemResponse chatItem = new ChatItemResponse(
+                notificationItem.connectionId,
+                Constants.CHAT_CATEGORY_MSG,
                 Constants.CHAT_STATUS_SENT,
                 myUserDetails.getUserId(),
                 notificationSenderId,
@@ -181,8 +191,8 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
                 TimeHandler.getCurrentTimeStamp(),
                 false, false, false);
 
-        ChatNotificationItem notificationItem = notificationsList.get(notificationSenderId);
-        sendChatMsg(chatItem, notificationItem.connectionId);
+        sendMessageChat(chatItem, notificationItem.connectionId);
+        actionMarkAsRead(notificationSenderId);
 
         NotificationRequirements notificationRequirementsObject = new NotificationRequirements(chatItem, notificationItem.userSender.getFcmToken(), notificationItem.connectionId);
         checkIsParticipantLiveOnChat(notificationSenderId, notificationItem.connectionId, notificationRequirementsObject);
@@ -212,7 +222,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
     }
 
     //NETWORK CALL
-    public void sendChatMsg(ChatItemResponse chatItem, String connectionId) {
+    public void sendMessageChat(ChatItemResponse chatItem, String connectionId) {
         firestoreManager.sendMessageChat(connectionId, chatItem);
     }
 
@@ -277,7 +287,13 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
 
             case FirebaseConstants.UPDATE_CHATS_STATUS_CALL: {
                 String notificationSenderId = (String) response;
-                clearNotification(notificationSenderId);
+                notificationsList.get(notificationSenderId).updateChatsStatus(Constants.CHAT_STATUS_READ);
+
+                if (isReplyingToChatNotification) {
+                    isReplyingToChatNotification = false;
+                } else {
+                    clearNotification(notificationSenderId);
+                }
                 break;
             }
 
@@ -293,6 +309,16 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
 
     @Override
     public void onFirestoreNetworkCallFailure(Object response, int serviceCode) {
+        switch (serviceCode) {
+            case (FirebaseConstants.UPDATE_CHATS_STATUS_CALL): {
+                String notificationSenderId = (String) response;
+
+                if (isReplyingToChatNotification) {
+                    isReplyingToChatNotification = false;
+                }
+                break;
+            }
+        }
     }
 
     @Override
@@ -336,6 +362,7 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
             this.connectionId = connectionId;
             chatList = new ArrayList<>();
 
+            userSender.setLocalPhoneName(ContactsProvider.getContactName(userSender.getMobileNo(), context));
             initPendingIntent();
             initMessagingStyle();
 
@@ -344,15 +371,18 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
         }
 
         private void initPendingIntent() {
-            Intent intent = new Intent(mContext, ChatWithIndividualActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            Intent intent = new Intent(mContext, ChatWithIndividualActivity.class);
+            intent.setAction(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            InterConnection myInterconnection = new InterConnection(connectionId, SessionManager.getUserId(), false);
-            InterConnection receiversInterconnection = new InterConnection(connectionId, userSender.getUserId(), false);
+            InterConnectionResponse myInterconnection = new InterConnectionResponse(connectionId, SessionManager.getUserId(), false, "");
+            InterConnectionResponse receiversInterconnection = new InterConnectionResponse(connectionId, userSender.getUserId(), false, "");
             intent.putExtra(Constants.INTENT_USER_DETAILS_EXTRA, userSender);
             intent.putExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA, myInterconnection);
             intent.putExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA, receiversInterconnection);
 
-            pendingIntent = PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            pendingIntent = PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         }
 
         private void initMessagingStyle() {
@@ -361,10 +391,24 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
             if (Helper.isNill(userSender.getProfileImgUrl())) {
                 personBuilder.setIcon(IconCompat.createWithBitmap(BitmapFactory.decodeResource(mResources, Helper.getProfilePlaceholderImg(mContext, userSender.getGender()))));
             } else {
-                personBuilder.setIcon(IconCompat.createWithBitmap(PicassoCache.getBitmap(mContext, mResources, userSender.profileImgUrl, R.drawable.img_user_placeholder)));
+                Bitmap imgBitmap;
+                try {
+                    imgBitmap = Glide.with(mContext)
+                            .asBitmap()
+                            .load(userSender.profileImgUrl)
+                            .placeholder(R.drawable.img_user_placeholder)
+                            .error(R.drawable.img_user_placeholder)
+                            .submit()
+                            .get();
+                    personBuilder.setIcon(IconCompat.createWithBitmap(imgBitmap));
+
+                } catch (ExecutionException | InterruptedException e) {
+                    personBuilder.setIcon(IconCompat.createWithBitmap(BitmapFactory.decodeResource(mResources, Helper.getProfilePlaceholderImg(mContext, userSender.getGender()))));
+                }
+//                personBuilder.setIcon(IconCompat.createWithBitmap(PicassoCache.getBitmap(mContext, mResources, userSender.profileImgUrl, R.drawable.img_user_placeholder)));
             }
             personSender = personBuilder
-                    .setName(ContactsProvider.getContactName(userSender.getMobileNo(), mContext))
+                    .setName(userSender.getLocalPhoneName())
                     .build();
 
             messagingStyle = new NotificationCompat.MessagingStyle(personSender).setGroupConversation(true);
@@ -391,12 +435,20 @@ public class ChatNotificationsManager implements FirestoreNetworkCallListener, R
         public ArrayList<String> getReceivedChatsIds() {
             ArrayList<String> chatIdsList = new ArrayList<>();
             for (ChatItemResponse chatItem : chatList) {
-                if (chatItem.getSenderId().matches(userSender.getUserId())) {
+                if (chatItem.getSenderId().matches(userSender.getUserId()) && chatItem.chatStatus != Constants.CHAT_STATUS_READ) {
                     chatIdsList.add(chatItem.getChatId());
                 }
             }
 
             return chatIdsList;
+        }
+
+        public void updateChatsStatus(int chatStatus) {
+            for (ChatItemResponse chatItem : chatList) {
+                if (chatItem.getSenderId().matches(userSender.getUserId())) {
+                    chatItem.setChatStatus(chatStatus);
+                }
+            }
         }
     }
 

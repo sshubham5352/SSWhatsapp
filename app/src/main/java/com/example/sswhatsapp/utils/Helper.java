@@ -108,4 +108,36 @@ public class Helper {
         else
             return R.drawable.img_user_placeholder;
     }
+
+    public static int getChatStatusDrawable(int chatStatus) {
+        switch (chatStatus) {
+            case Constants.CHAT_STATUS_PENDING:
+                return R.drawable.img_chat_loading_icon;
+            case Constants.CHAT_STATUS_SENT:
+                return R.drawable.img_single_tick_white;
+            case Constants.CHAT_STATUS_RECEIVED:
+                return R.drawable.img_double_tick_white;
+            case Constants.CHAT_STATUS_READ:
+                return R.drawable.img_double_tick_green;
+            case Constants.CHAT_STATUS_HALTED:
+                return R.drawable.img_red_cross;
+        }
+        return R.drawable.img_chat_loading_icon;
+    }
+
+    public static int getChatStatusDarkDrawable(int chatStatus) {
+        switch (chatStatus) {
+            case Constants.CHAT_STATUS_PENDING:
+                return R.drawable.img_chat_loading_icon_dark_gray;
+            case Constants.CHAT_STATUS_SENT:
+                return R.drawable.img_single_tick_dark_gray;
+            case Constants.CHAT_STATUS_RECEIVED:
+                return R.drawable.img_double_tick_dark_gray;
+            case Constants.CHAT_STATUS_READ:
+                return R.drawable.img_double_tick_light_blue;
+            case Constants.CHAT_STATUS_HALTED:
+                return R.drawable.img_red_cross;
+        }
+        return R.drawable.img_chat_loading_icon_dark_gray;
+    }
 }

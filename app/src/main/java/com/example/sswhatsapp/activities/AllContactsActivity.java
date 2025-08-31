@@ -13,17 +13,17 @@ import androidx.databinding.DataBindingUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.sswhatsapp.R;
-import com.example.sswhatsapp.adapters.NonSSUsersListAdapter;
-import com.example.sswhatsapp.adapters.SSUsersListAdapter;
+import com.example.sswhatsapp.adapters.NonSSUsersAdapter;
+import com.example.sswhatsapp.adapters.SSUsersAdapter;
 import com.example.sswhatsapp.databinding.ActivityAllContactsBinding;
 import com.example.sswhatsapp.firebase.FirebaseConstants;
 import com.example.sswhatsapp.firebase.FirestoreManager;
 import com.example.sswhatsapp.firebase.FirestoreNetworkCallListener;
-import com.example.sswhatsapp.listeners.NonSSUsersListListener;
-import com.example.sswhatsapp.listeners.SSUsersListListener;
-import com.example.sswhatsapp.models.InterConnection;
-import com.example.sswhatsapp.models.UserDetailsResponse;
+import com.example.sswhatsapp.listeners.NonSSUsersAdapterListener;
+import com.example.sswhatsapp.listeners.SSUsersAdapterListener;
 import com.example.sswhatsapp.models.UserDeviceContact;
+import com.example.sswhatsapp.models.responses.InterConnectionResponse;
+import com.example.sswhatsapp.models.responses.UserDetailsResponse;
 import com.example.sswhatsapp.providers.ContactsProvider;
 import com.example.sswhatsapp.utils.Constants;
 import com.example.sswhatsapp.utils.Helper;
@@ -38,16 +38,16 @@ import java.util.Collections;
 import java.util.List;
 
 public class AllContactsActivity extends AppCompatActivity implements View.OnClickListener, FirestoreNetworkCallListener,
-        SSUsersListListener, NonSSUsersListListener, NestedScrollView.OnScrollChangeListener {
+        SSUsersAdapterListener, NonSSUsersAdapterListener, NestedScrollView.OnScrollChangeListener {
     //fields
     private ActivityAllContactsBinding binding;
     private FirestoreManager firestoreManager;
     private List<UserDeviceContact> allContactsList;
     private List<UserDeviceContact> nonSSWhatsappContactList;
     private List<UserDetailsResponse> SSWhatsappUsersList;     //these are the people on SSWhatsapp whose mobile no. is saved in user's phone
-    SSUsersListAdapter ssUsersListAdapter;
-    NonSSUsersListAdapter nonSSUsersListAdapter;
-    InterConnection myInterconnection, receiversInterconnection;
+    SSUsersAdapter ssUsersAdapter;
+    NonSSUsersAdapter nonSSUsersAdapter;
+    InterConnectionResponse myInterconnection, receiversInterconnection;
     String myUserId, myInterconnectionsDocId;
 
 
@@ -58,6 +58,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
         myUserId = SessionManager.getUserId();
         myInterconnectionsDocId = SessionManager.getMyInterconnectionsDocId();
         firestoreManager = new FirestoreManager(this, this);
+
         requestUserContactsPermission();
         initToolbar();
 
@@ -113,7 +114,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
             isContactOnSSWhatsapp = false;
             for (UserDetailsResponse user : allUsers) {
                 if (user.getMobileNo().matches(contact.getMobileNo())) {
-                    user.setName(contact.getName());
+                    user.setLocalPhoneName(contact.getName());
                     SSWhatsappUsersList.add(user);
                     isContactOnSSWhatsapp = true;
                     break;
@@ -127,17 +128,17 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     private void setSSUserListAdapter() {
         //setting rv carbon emission
         binding.rvSsContacts.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        binding.rvSsContacts.addItemDecoration(new SSUsersListAdapter.SpacingItemDecoration(getResources().getDimensionPixelSize(R.dimen.space_between_rv_user_items)));
-        ssUsersListAdapter = new SSUsersListAdapter(this, this, SSWhatsappUsersList);
-        binding.rvSsContacts.setAdapter(ssUsersListAdapter);
+        binding.rvSsContacts.addItemDecoration(new SSUsersAdapter.SpacingItemDecoration(getResources().getDimensionPixelSize(R.dimen.space_between_rv_user_items)));
+        ssUsersAdapter = new SSUsersAdapter(this, this, SSWhatsappUsersList);
+        binding.rvSsContacts.setAdapter(ssUsersAdapter);
     }
 
     private void setNonSSUserListAdapter() {
         //setting rv carbon emission
         binding.rvNonSsContacts.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        binding.rvNonSsContacts.addItemDecoration(new NonSSUsersListAdapter.SpacingItemDecoration(getResources().getDimensionPixelSize(R.dimen.space_between_rv_user_items)));
-        nonSSUsersListAdapter = new NonSSUsersListAdapter(this, this, nonSSWhatsappContactList);
-        binding.rvNonSsContacts.setAdapter(nonSSUsersListAdapter);
+        binding.rvNonSsContacts.addItemDecoration(new NonSSUsersAdapter.SpacingItemDecoration(getResources().getDimensionPixelSize(R.dimen.space_between_rv_user_items)));
+        nonSSUsersAdapter = new NonSSUsersAdapter(this, this, nonSSWhatsappContactList);
+        binding.rvNonSsContacts.setAdapter(nonSSUsersAdapter);
     }
 
     private void setToolbarNoOfContacts() {
@@ -157,13 +158,13 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     public void onScrollChange(@NonNull NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
         if (!binding.scrollView.canScrollVertically(1)) {
             //onBottomHit
-            if (ssUsersListAdapter.isListCompletelyShown()) {
-                if (nonSSUsersListAdapter.isListCompleted())
+            if (ssUsersAdapter.isListCompletelyShown()) {
+                if (nonSSUsersAdapter.isListCompleted())
                     binding.scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) null);
                 else
-                    nonSSUsersListAdapter.showNextPage();
+                    nonSSUsersAdapter.showNextPage();
             } else {
-                ssUsersListAdapter.showNextPage();
+                ssUsersAdapter.showNextPage();
             }
         }
     }
@@ -188,7 +189,8 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     //ACTIVITY LAUNCH
     void startChatWithIndividualActivity() {
         Intent intent = new Intent(this, ChatWithIndividualActivity.class);
-        intent.putExtra(Constants.INTENT_USER_DETAILS_EXTRA, ssUsersListAdapter.selectedUser);
+        intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+        intent.putExtra(Constants.INTENT_USER_DETAILS_EXTRA, ssUsersAdapter.selectedUser);
         intent.putExtra(Constants.INTENT_MY_INTERCONNECTION_EXTRA, myInterconnection);
         intent.putExtra(Constants.INTENT_RECEIVERS_INTERCONNECTION_EXTRA, receiversInterconnection);
         startActivity(intent);
@@ -211,14 +213,14 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
     }
 
     //NETWORK CALL
-    private void createMyInterconnection(InterConnection connectionDetails) {
-        firestoreManager.createMyInterconnection(myInterconnectionsDocId, connectionDetails);
+    private void createMyInterconnection(InterConnectionResponse interconnectionResponse) {
+        firestoreManager.createMyInterconnection(myInterconnectionsDocId, interconnectionResponse);
     }
 
     //NETWORK CALL
     private void createReceiversInterconnection(String connectionId) {
-        InterConnection receiverInterconnectionItem = new InterConnection(connectionId, myUserId, true);
-        firestoreManager.createReceiversInterconnection(ssUsersListAdapter.selectedUser.myInterconnectionsDocId, receiverInterconnectionItem);
+        InterConnectionResponse receiverInterconnectionItem = new InterConnectionResponse(connectionId, myUserId, true, TimeHandler.getCurrentTimeStamp());
+        firestoreManager.createReceiversInterconnection(ssUsersAdapter.selectedUser.myInterconnectionsDocId, receiverInterconnectionItem);
     }
 
     //NETWORK CALL
@@ -256,19 +258,19 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
                 if (querySnapshot.size() == 0) {
                     //Connection does not exist in the collection
                     //So we need to create a new connection and 2 interconnections for each user
-                    createNewConnection(ssUsersListAdapter.selectedUser.getUserId());
+                    createNewConnection(ssUsersAdapter.selectedUser.getUserId());
                 } else {
                     //Connection exists
-                    myInterconnection = querySnapshot.getDocuments().get(0).toObject(InterConnection.class);
+                    myInterconnection = querySnapshot.getDocuments().get(0).toObject(InterConnectionResponse.class);
                     //a time utilization (saving one network call)
-                    receiversInterconnection = new InterConnection(myInterconnection.getConnectionId(), myUserId, true);    // <- a time utilization (saving one network call)
+                    receiversInterconnection = new InterConnectionResponse(myInterconnection.getConnectionId(), myUserId, true, myInterconnection.getModifiedAt());    // <- a time utilization (saving one network call)
                     startChatWithIndividualActivity();
                 }
                 break;
             }
 
             case FirebaseConstants.CREATE_NEW_CONNECTION_CALL: {
-                InterConnection connectionRef = (InterConnection) response;
+                InterConnectionResponse connectionRef = (InterConnectionResponse) response;
                 if (connectionRef != null) {
                     /*
                      * now creating an interconnection for the user*/
@@ -278,7 +280,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
             }
 
             case FirebaseConstants.CREATE_MY_INTERCONNECTION_CALL: {
-                myInterconnection = ((InterConnection) response);
+                myInterconnection = ((InterConnectionResponse) response);
                 if (myInterconnection != null) {
                     createReceiversInterconnection(myInterconnection.getConnectionId());
                 } else {
@@ -288,12 +290,11 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
             }
 
             case FirebaseConstants.CREATE_RECEIVERS_INTERCONNECTION_CALL: {
-                receiversInterconnection = (InterConnection) response;
+                receiversInterconnection = (InterConnectionResponse) response;
                 startChatWithIndividualActivity();
                 break;
             }
         }
-
     }
 
     @Override
@@ -315,7 +316,7 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
                     String connectionId = (String) response;
                     if (!Helper.isNill(connectionId)) {
                         deleteConnection(connectionId);
-                        deleteConnectionsReferenceFromList(myInterconnectionsDocId, ssUsersListAdapter.selectedUser.getUserId());
+                        deleteConnectionsReferenceFromList(myInterconnectionsDocId, ssUsersAdapter.selectedUser.getUserId());
                     }
                 }
                 onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR);
@@ -327,8 +328,8 @@ public class AllContactsActivity extends AppCompatActivity implements View.OnCli
                     String connectionId = (String) response;
                     if (!Helper.isNill(connectionId)) {
                         deleteConnection(connectionId);
-                        deleteConnectionsReferenceFromList(myInterconnectionsDocId, ssUsersListAdapter.selectedUser.getUserId());
-                        deleteConnectionsReferenceFromList(ssUsersListAdapter.selectedUser.getMyInterconnectionsDocId(), myUserId);
+                        deleteConnectionsReferenceFromList(myInterconnectionsDocId, ssUsersAdapter.selectedUser.getUserId());
+                        deleteConnectionsReferenceFromList(ssUsersAdapter.selectedUser.getMyInterconnectionsDocId(), myUserId);
                     }
                 }
                 onFirestoreNetworkCallFailure(FirebaseConstants.GENERAL_ERROR);

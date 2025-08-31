@@ -1,4 +1,4 @@
-package com.example.sswhatsapp.models;
+package com.example.sswhatsapp.models.responses;
 
 import androidx.annotation.NonNull;
 
@@ -8,7 +8,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 
 import java.io.Serializable;
 
-public class InterConnection implements Serializable {
+public class InterConnectionResponse implements Serializable {
     //fields
     @PropertyName(FirebaseConstants.KEY_CONNECTION_ID)
     public String connectionId;
@@ -16,10 +16,12 @@ public class InterConnection implements Serializable {
     public String connectionWith;
     @PropertyName(FirebaseConstants.KEY_IS_ERADICATED)
     public boolean isEradicated;
+    @PropertyName(FirebaseConstants.KEY_MODIFIED_AT)
+    public String modifiedAt;
 
 
     //CONSTRUCTOR
-    public InterConnection() {
+    public InterConnectionResponse() {
         /*
          * Empty Constructor
          * required for firestore to convert document to pojo java class
@@ -27,10 +29,11 @@ public class InterConnection implements Serializable {
     }
 
     //CONSTRUCTOR
-    public InterConnection(String connectionId, String connectionWith, boolean isEradicated) {
+    public InterConnectionResponse(String connectionId, String connectionWith, boolean isEradicated, String modifiedAt) {
         this.connectionId = connectionId;
         this.connectionWith = connectionWith;
         this.isEradicated = isEradicated;
+        this.modifiedAt = modifiedAt;
     }
 
     public String getConnectionId() {
@@ -39,6 +42,10 @@ public class InterConnection implements Serializable {
 
     public String getConnectionWith() {
         return connectionWith;
+    }
+
+    public String getModifiedAt() {
+        return modifiedAt;
     }
 
     public boolean isEradicated() {
@@ -55,7 +62,8 @@ public class InterConnection implements Serializable {
     public String toString() {
         return "ConnectionRef: " + connectionId +
                 "Connection With: " + connectionWith +
-                "Is Eradicated: " + isEradicated;
+                "Is Eradicated: " + isEradicated +
+                "Modified at: " + modifiedAt;
     }
 
     public static class CustomMyConnectionResponse {

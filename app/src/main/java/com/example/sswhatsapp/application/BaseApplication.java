@@ -16,7 +16,6 @@ public class BaseApplication extends Application implements DefaultLifecycleObse
     private RealtimeDbManager realtimeDbManager;
 
     @Override
-
     public void onCreate() {
         super.onCreate();
         ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
@@ -42,6 +41,11 @@ public class BaseApplication extends Application implements DefaultLifecycleObse
         if (myUserId != null) {
             realtimeDbManager.updateMyOnlineStatus(false, myUserId);
         }
+    }
+
+    @Override
+    public void onDestroy(@NonNull LifecycleOwner owner) {
+        DefaultLifecycleObserver.super.onDestroy(owner);
     }
 
     @Override

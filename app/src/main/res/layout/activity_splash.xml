@@ -23,7 +23,7 @@
                 android:layout_height="@dimen/size_app_logo_lottie_anim"
                 app:lottie_autoPlay="true"
                 app:lottie_loop="false"
-                app:lottie_rawRes="@raw/app_logo_lottie" />
+                app:lottie_rawRes="@raw/app_logo_lottie_2" />
 
             <TextView
                 android:id="@+id/txt_app_name"
